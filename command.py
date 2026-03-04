@@ -5,9 +5,10 @@ import random
 import signal
 import shlex
 import sys
+import json
 
 from aioconsole import ainput
-from joycontrol.controller_state import button_push, ControllerState
+from joycontrol.controller_state import button_push, button_press, button_release, ControllerState
 from joycontrol.nfc_tag import NFCTag
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,40 @@ class CCLI():
         self.available_buttons = self.controller_state.button_state.get_available_buttons()
         self.available_sticks = {'ls','rs'}
         self.script = False
+        self.current_amiibo = None
+        # 初始化状态文件
+        self.update_status(connected=False, message='初始化中...')
+
+    def update_status(self, connected=None, message=None, amiibo=None):
+        """更新状态文件供 web.py 读取"""
+        status_file = 'file/status.json'
+        try:
+            # 读取现有状态
+            try:
+                with open(status_file, 'r', encoding='utf-8') as f:
+                    status = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                status = {
+                    'connected': False,
+                    'controller_type': 'PRO_CONTROLLER',
+                    'current_amiibo': None,
+                    'message': ''
+                }
+            
+            # 更新指定字段
+            if connected is not None:
+                status['connected'] = connected
+            if message is not None:
+                status['message'] = message
+            if amiibo is not None:
+                status['current_amiibo'] = amiibo
+                self.current_amiibo = amiibo
+            
+            # 写入状态文件
+            with open(status_file, 'w', encoding='utf-8') as f:
+                json.dump(status, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f'状态更新失败: {e}')
 
     async def write(self,msg):
         with open('file/message.txt','a') as f:
@@ -95,9 +130,30 @@ class CCLI():
              elif cmd == 'amiibo':
                  if args[0] == 'remove':
                      self.controller_state.set_nfc(None)
+                     self.update_status(amiibo=None, message='Amiibo 已移除')
                      print('amiibo已移除')
                  elif args[0] != 'clean':
                      await self.set_amiibo(args[0]) #设置amiibo
+             elif cmd == 'press':  # 按下按键（长按开始）
+                 if args:
+                     btn = args[0]
+                     if btn in self.available_buttons:
+                         await button_press(self.controller_state, btn)
+                         print(f'press {btn}')
+                     elif btn in self.available_sticks:
+                         # 摇杆长按
+                         if len(args) > 1:
+                             direction = args[1]
+                             self.cmd_stick_hold(btn, direction)
+             elif cmd == 'release':  # 释放按键（长按结束）
+                 if args:
+                     btn = args[0]
+                     if btn in self.available_buttons:
+                         await button_release(self.controller_state, btn)
+                         print(f'release {btn}')
+                     elif btn in self.available_sticks:
+                         # 释放摇杆
+                         self.release_stick(btn)
              else: #错误代码
                  print('command',cmd,'not found')
 
@@ -111,8 +167,10 @@ class CCLI():
             path = 'file/amiibo/' + fileName
             tag = NFCTag.load_amiibo(path)
             self.controller_state.set_nfc(tag)
+            self.update_status(amiibo=fileName, message=f'已加载 Amiibo: {fileName}')
             print('amiibo设置成功')
         except Exception as e:
+            self.update_status(message=f'Amiibo 加载失败: {e}')
             print(f'amiibo设置失败: {e}')
 
     def set_stick(self,stick, direction, value=None):
@@ -190,6 +248,46 @@ class CCLI():
             test = 0
         else:
             await self.stickOff(stick)
+
+    def cmd_stick_hold(self, side, direction):
+        """
+        摇杆长按开始 - 设置摇杆位置但不自动释放
+        :param side: 'ls' 左摇杆, 'rs' 右摇杆
+        :param direction: 'up', 'down', 'left', 'right'
+        """
+        try:
+            if side == 'ls':
+                stick = self.controller_state.l_stick_state
+            elif side == 'rs':
+                stick = self.controller_state.r_stick_state
+            else:
+                return
+            
+            self.set_stick(stick, direction)
+            # 发送状态但不等待
+            asyncio.create_task(self.controller_state.send())
+            print(f'stick hold: {side} {direction}')
+        except Exception as e:
+            print(f'摇杆长按失败: {e}')
+
+    def release_stick(self, side):
+        """
+        释放摇杆 - 将摇杆回到中心位置
+        :param side: 'ls' 左摇杆, 'rs' 右摇杆
+        """
+        try:
+            if side == 'ls':
+                stick = self.controller_state.l_stick_state
+            elif side == 'rs':
+                stick = self.controller_state.r_stick_state
+            else:
+                return
+            
+            stick.set_center()
+            asyncio.create_task(self.controller_state.send())
+            print(f'stick release: {side}')
+        except Exception as e:
+            print(f'摇杆释放失败: {e}')
 
     async def readCommand(self,file):
         user_input = await self.get(file)

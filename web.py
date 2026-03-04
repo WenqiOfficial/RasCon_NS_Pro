@@ -1,25 +1,325 @@
-from flask import Flask,render_template,request
+from flask import Flask, render_template, request, jsonify
 import shutil
 import os
+import json
 import amiibos
 
 app = Flask(__name__)
 script = ""
 
+# 状态存储
+status = {
+    'connected': False,
+    'controller_type': 'PRO_CONTROLLER',
+    'current_amiibo': None
+}
+
 def default():
     msg = read('msg.txt')
     script = read('scriptcopy.txt')
-    return msg,script
+    return msg, script
 
 def read(file):
-    with open('file/'+file,'r') as f:
+    with open('file/' + file, 'r', encoding='utf-8') as f:
         return f.read()
-def write(file,msg):
-    with open('file/'+file,'w') as f:
+
+def write(file, msg):
+    with open('file/' + file, 'w', encoding='utf-8') as f:
         f.write(msg)
+
 def clean(file):
-    with open('file/'+file,'w+') as f:
+    with open('file/' + file, 'w+', encoding='utf-8') as f:
         f.truncate()
+
+# ==================== API 端点 ====================
+
+@app.route('/api/btn', methods=['POST'])
+def api_btn():
+    """AJAX API: 发送按键命令（支持长按）"""
+    try:
+        data = request.get_json()
+        action = data.get('action', 'push')  # push, press, release
+        button = data.get('button', '')
+        
+        if not button:
+            return jsonify({'success': False, 'error': '缺少按键参数'})
+        
+        if action == 'press':
+            # 按下按键（长按开始）
+            write('command.txt', f'press {button}')
+        elif action == 'release':
+            # 释放按键（长按结束）
+            write('command.txt', f'release {button}')
+        else:
+            # 普通按键（按下后释放）
+            write('command.txt', button)
+        
+        return jsonify({'success': True, 'action': action, 'button': button})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    """AJAX API: 获取当前状态（从 joycontrol 同步）"""
+    try:
+        # 读取 joycontrol 写入的状态文件
+        status_file = 'file/status.json'
+        if os.path.exists(status_file):
+            with open(status_file, 'r', encoding='utf-8') as f:
+                joycontrol_status = json.load(f)
+        else:
+            joycontrol_status = {
+                'connected': False,
+                'controller_type': 'PRO_CONTROLLER',
+                'current_amiibo': None,
+                'message': 'joycontrol 未启动'
+            }
+        
+        # 尝试读取消息日志
+        msg = read('msg.txt') if os.path.exists('file/msg.txt') else ''
+        
+        return jsonify({
+            'success': True,
+            'connected': joycontrol_status.get('connected', False),
+            'controller_type': joycontrol_status.get('controller_type', 'PRO_CONTROLLER'),
+            'current_amiibo': joycontrol_status.get('current_amiibo'),
+            'joycontrol_message': joycontrol_status.get('message', ''),
+            'message': msg
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/list', methods=['GET'])
+def api_amiibo_list():
+    """AJAX API: 获取已上传的 Amiibo 列表（增强版）"""
+    try:
+        from amiibo_library import library
+        
+        # 先同步数据库
+        library.scan_and_sync()
+        
+        # 获取列表
+        amiibos_list = library.get_amiibo_list(include_info=True)
+        stats = library.get_statistics()
+        
+        return jsonify({
+            'success': True, 
+            'amiibos': amiibos_list,
+            'statistics': stats
+        })
+    except ImportError:
+        # 回退到简单模式
+        amiibo_path = 'file/amiibo/data/'
+        if not os.path.exists(amiibo_path):
+            amiibo_path = 'file/amiibo/'
+            os.makedirs(amiibo_path, exist_ok=True)
+        
+        amiibos_list = []
+        for f in os.listdir(amiibo_path):
+            if f.endswith('.bin'):
+                amiibos_list.append({
+                    'filename': f,
+                    'path': amiibo_path + f,
+                    'size': os.path.getsize(amiibo_path + f)
+                })
+        
+        return jsonify({'success': True, 'amiibos': amiibos_list})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/add', methods=['POST'])
+def api_amiibo_add():
+    """AJAX API: 上传新的 Amiibo"""
+    try:
+        from amiibo_library import library
+        
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': '没有选择文件'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': '没有选择文件'})
+        
+        if not file.filename.endswith('.bin'):
+            return jsonify({'success': False, 'error': '请上传 .bin 格式的 Amiibo 文件'})
+        
+        # 保存到临时位置
+        temp_path = f'file/amiibo/temp_{file.filename}'
+        file.save(temp_path)
+        
+        # 添加到库
+        custom_name = request.form.get('name', None)
+        result = library.add_amiibo(temp_path, custom_name or file.filename)
+        
+        # 删除临时文件
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/delete', methods=['POST'])
+def api_amiibo_delete():
+    """AJAX API: 删除 Amiibo"""
+    try:
+        from amiibo_library import library
+        
+        data = request.get_json()
+        filename = data.get('filename', '')
+        remove_origin = data.get('remove_origin', False)
+        
+        if not filename:
+            return jsonify({'success': False, 'error': '缺少文件名'})
+        
+        result = library.remove_amiibo(filename, remove_origin)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/restore', methods=['POST'])
+def api_amiibo_restore():
+    """AJAX API: 恢复 Amiibo 到原始状态"""
+    try:
+        from amiibo_library import library
+        
+        data = request.get_json()
+        filename = data.get('filename', '')
+        
+        if not filename:
+            return jsonify({'success': False, 'error': '缺少文件名'})
+        
+        result = library.restore_amiibo(filename)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/info/<filename>', methods=['GET'])
+def api_amiibo_info(filename):
+    """AJAX API: 获取 Amiibo 详细信息"""
+    try:
+        from amiibo_library import library
+        
+        info = library.get_amiibo_info(filename)
+        if info:
+            return jsonify({'success': True, 'info': info})
+        else:
+            return jsonify({'success': False, 'error': '未找到该 Amiibo'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/search', methods=['GET'])
+def api_amiibo_search():
+    """AJAX API: 搜索 Amiibo"""
+    try:
+        from amiibo_library import library
+        
+        query = request.args.get('q', '')
+        results = library.search_amiibos(query)
+        
+        return jsonify({'success': True, 'amiibos': results, 'query': query})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/tree', methods=['GET'])
+def api_amiibo_tree():
+    """AJAX API: 获取 Amiibo 树状结构"""
+    try:
+        from amiibo_library import library
+        
+        tree = library.get_tree_structure()
+        return jsonify({'success': True, 'tree': tree})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/external/scan', methods=['POST'])
+def api_amiibo_external_scan():
+    """AJAX API: 扫描外部 Amiibo 库"""
+    try:
+        from amiibo_library import AmiiboExternalLibrary
+        
+        data = request.get_json()
+        path = data.get('path', '')
+        
+        if not path:
+            # 使用默认路径（相对于项目的Amiibo目录）
+            import os
+            base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            path = os.path.join(base, 'Amiibo', 'Amiibo NFC')
+        
+        tree = AmiiboExternalLibrary.scan_external_library(path)
+        return jsonify({'success': True, 'tree': tree, 'scanned_path': path})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/external/import', methods=['POST'])
+def api_amiibo_external_import():
+    """AJAX API: 从外部库导入 Amiibo"""
+    try:
+        from amiibo_library import AmiiboExternalLibrary
+        
+        data = request.get_json()
+        items = data.get('items', [])
+        
+        if not items:
+            # 单个导入
+            src_path = data.get('path', '')
+            series = data.get('series')
+            name = data.get('name')
+            
+            if not src_path:
+                return jsonify({'success': False, 'error': '缺少文件路径'})
+            
+            result = AmiiboExternalLibrary.import_from_external(src_path, series, name)
+            return jsonify(result)
+        else:
+            # 批量导入
+            result = AmiiboExternalLibrary.batch_import(items)
+            return jsonify({'success': True, **result})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/update', methods=['POST'])
+def api_amiibo_update():
+    """AJAX API: 更新 Amiibo 信息"""
+    try:
+        from amiibo_library import library
+        
+        data = request.get_json()
+        filename = data.get('filename', '')
+        
+        if not filename:
+            return jsonify({'success': False, 'error': '缺少文件名'})
+        
+        # 提取可更新的字段
+        update_fields = {}
+        for key in ['custom_name', 'series', 'character', 'game_series']:
+            if key in data:
+                update_fields[key] = data[key]
+        
+        result = library.update_amiibo_info(filename, **update_fields)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/scan', methods=['POST'])
+def api_amiibo_scan():
+    """AJAX API: 扫描/使用 Amiibo"""
+    try:
+        data = request.get_json()
+        filename = data.get('filename', '')
+        
+        if not filename:
+            return jsonify({'success': False, 'error': '缺少文件名'})
+        
+        # 发送 amiibo 命令
+        write('command.txt', f'amiibo {filename}')
+        
+        return jsonify({'success': True, 'message': f'正在扫描 {filename}'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# ==================== 原有路由 ====================
 
 @app.route('/')
 def index():

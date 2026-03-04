@@ -35,8 +35,12 @@ async def _main(args):
         
         try:
             await controller_state.connect()
+            # 更新连接状态
+            cli.update_status(connected=True, message='已连接到 Switch')
             await cli.run()
         finally:
+            # 断开连接时更新状态
+            cli.update_status(connected=False, message='已断开连接')
             logger.info('Stopping communication...')
             await transport.close()
 

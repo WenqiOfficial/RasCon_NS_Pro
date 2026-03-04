@@ -159,12 +159,16 @@ hid
 | 文件 | 修改内容 |
 |------|---------|
 | `run.py` | asyncio.run() 替代 loop.run_until_complete() |
-| `command.py` | 添加 NFCTag 导入、修复 Amiibo 加载、平台兼容性、语法修复 |
+| `command.py` | 添加 NFCTag 导入、修复 Amiibo 加载、平台兼容性、语法修复、添加 press/release 命令 |
+| `web.py` | 添加 AJAX API 端点 (/api/btn, /api/status, /api/amiibo 系列) |
 | `joycontrol/utils.py` | AsyncHID 类 loop 参数修复 |
 | `joycontrol/server.py` | get_running_loop() 替代 get_event_loop() |
 | `joycontrol/my_semaphore.py` | 完全重构以兼容 Python 3.10+ |
-| `templates/index.html` | 全新现代化界面 |
+| `templates/index.html` | 全新现代化界面、长按支持、键盘快捷键、**Amiibo 库完整集成** |
 | `templates/index_old.html` | 原界面备份 |
+| `templates/index_backup.html` | Amiibo 库集成前的备份 |
+| `start.py` | 新增一键启动脚本 |
+| `amiibo_library.py` | **新增** Amiibo 库管理系统（搜索、分类、导入、恢复等） |
 
 ---
 
@@ -177,4 +181,144 @@ hid
 | 2026-03-04 | 完成 Amiibo 功能修复 | ✅ |
 | 2026-03-04 | 完成 WebUI 优化 | ✅ |
 | 2026-03-04 | 更新 TODO.md 状态 | ✅ |
+| 2026-03-04 | 添加用户反馈需求 | ✅ |
+| 2026-03-04 | 完成 9.1 长按功能、9.2 键盘快捷键 | ✅ |
+| 2026-03-04 | 完成 9.3 状态同步、9.4 一键启动 | ✅ |
+| 2026-03-04 | 开始实现 9.5 Amiibo 库集成到控制器界面 | ✅ |
+| 2026-03-04 | 完成 9.5 Amiibo 库功能 - 完整集成到控制器界面 | ✅ |
 
+---
+
+## 九、用户反馈需求 (2026-03-04)
+
+### 9.1 按键长按功能 (高优先级) ✅ 已完成
+- [x] 网页端控制按键支持长按
+  - 使用 JavaScript mousedown/mouseup 事件
+  - 通过 AJAX 实现持续按键 (/api/btn endpoint)
+  - 添加视觉反馈（.btn-pressed 样式）
+  - 支持触摸设备（touchstart/touchend 事件）
+
+### 9.2 键盘快捷键映射 (高优先级) ✅ 已完成
+- [x] WASD 对应左摇杆方向
+- [x] 方向键对应右摇杆方向
+- [x] 其他键盘映射
+  - Space=A, Enter=B, E=X, Q=Y
+  - Shift=L, Ctrl=R, Z=ZL, C=ZR
+  - Tab=Minus, Backspace/Escape=Plus
+  - 1=Capture, 2=Home
+- [x] 支持同时按多个键（多键状态追踪）
+
+### 9.3 蓝牙状态同步 (中优先级) 🔄 部分完成
+- [x] 实现与 joycontrol 的状态同步
+  - 连接状态实时显示（通过 file/status.json）
+  - 当前 Amiibo 状态显示
+  - 状态消息显示
+- [ ] 修复网页端蓝牙连接/断开功能（需要 Linux 环境测试）
+- [ ] 自动检测已配对的 Switch
+- [ ] 提供删除旧配对记录的功能
+
+### 9.4 一键启动功能 (中优先级) ✅ 已完成
+- [x] 创建统一启动脚本 `start.py`
+  - 同时启动 Web 界面和 joycontrol
+  - 支持 --web-only 模式（仅启动 Web）
+  - 支持 --reconnect-bt-addr 快速重连
+  - 支持 --port 自定义端口
+- [x] 自动检查 root 权限
+- [x] 信号处理（优雅退出）
+- [ ] 高级配置页面（选择控制器类型等）- 待后续开发
+
+### 9.5 Amiibo 库管理系统 (高优先级 - 大型功能) ✅ 已完成
+
+#### 9.5.1 基础架构
+- [x] 创建 `file/amiibo/origin/` 文件夹 - 存储原始 Amiibo
+- [x] 创建 `file/amiibo/data/` 文件夹 - 存储可修改的 Amiibo 数据
+- [x] 创建 Amiibo 数据库模型（JSON）
+
+#### 9.5.2 Amiibo 管理功能
+- [x] 上传时自动复制到 origin 和 data
+- [x] 编辑 Amiibo 条目信息
+- [x] 删除 Amiibo 条目
+- [x] 扫描/使用 Amiibo（从 data 文件夹）
+- [x] 复原功能：将 origin 覆盖到 data
+
+#### 9.5.3 Amiibo 信息集成
+- [x] 支持外部 Amiibo 库扫描和导入
+- [x] 显示 Amiibo 名称、系列等信息
+- [ ] 集成 AmiiboAPI 自动获取图片信息 (后续可添加)
+
+#### 9.5.4 Amiibo 库界面 - 完全集成到控制器界面
+- [x] 搜索/筛选功能
+- [x] 树状分类导航（按系列）
+- [x] Amiibo 列表显示
+- [x] 外部库浏览和导入
+- [x] 上传/删除/恢复/扫描操作
+
+### 9.6 鲁棒性改进 (低优先级)
+- [ ] 完善错误处理
+- [ ] 添加操作确认对话框
+- [ ] 添加操作日志记录
+- [ ] 人性化的提示信息
+
+---
+
+## 十、技术实现方案
+
+### 10.1 按键长按实现方案
+```javascript
+// 使用 WebSocket 实现持续按键
+let ws = new WebSocket('ws://host:5001/controller');
+let pressedKeys = new Set();
+
+button.addEventListener('mousedown', () => {
+    pressedKeys.add(button.value);
+    ws.send(JSON.stringify({action: 'press', button: button.value}));
+});
+
+button.addEventListener('mouseup', () => {
+    pressedKeys.delete(button.value);
+    ws.send(JSON.stringify({action: 'release', button: button.value}));
+});
+```
+
+### 10.2 键盘映射方案
+```javascript
+const keyMap = {
+    'KeyW': 'ls up,100',
+    'KeyA': 'ls left,100',
+    'KeyS': 'ls down,100',
+    'KeyD': 'ls right,100',
+    'ArrowUp': 'rs up,100',
+    'ArrowLeft': 'rs left,100',
+    'ArrowDown': 'rs down,100',
+    'ArrowRight': 'rs right,100',
+    'Space': 'a',
+    'Enter': 'b',
+    // ... 更多映射
+};
+
+document.addEventListener('keydown', (e) => {
+    if (keyMap[e.code]) {
+        ws.send(JSON.stringify({action: 'press', button: keyMap[e.code]}));
+    }
+});
+```
+
+### 10.3 Amiibo 数据结构
+```json
+{
+    "amiibos": [
+        {
+            "id": "uuid",
+            "filename": "mario.bin",
+            "name": "Mario",
+            "series": "Super Mario",
+            "game": "Super Smash Bros.",
+            "image_url": "https://...",
+            "origin_path": "origin/mario.bin",
+            "data_path": "data/mario.bin",
+            "created_at": "2026-03-04",
+            "last_used": "2026-03-04"
+        }
+    ]
+}
+```

@@ -5,6 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RasCon Ver.2.0 - Pro Controller</title>
     <style>
+        :root {
+            --bg-primary: #0d0d0d;
+            --bg-secondary: #141414;
+            --bg-tertiary: #1a1a1a;
+            --bg-card: #1e1e1e;
+            --border-color: #2a2a2a;
+            --border-accent: #333;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --text-muted: #555;
+            --accent-primary: #00d4aa;
+            --accent-secondary: #00b894;
+            --accent-hover: #00e6b8;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --success: #00d4aa;
+            --info: #3498db;
+        }
+        
         * {
             box-sizing: border-box;
             margin: 0;
@@ -12,515 +31,1694 @@
         }
         
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
             min-height: 100vh;
-            color: #fff;
+            color: var(--text-primary);
             padding: 20px;
+            line-height: 1.5;
         }
         
         .container {
-            max-width: 1200px;
+            max-width: 1440px;
             margin: 0 auto;
         }
         
+        /* Header - 简约风格 */
         header {
-            text-align: center;
-            padding: 20px;
-            background: rgba(255, 165, 0, 0.9);
-            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
         }
         
-        header h1 {
-            color: #1a1a2e;
-            font-size: 2em;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
-        .main-content {
-            display: grid;
-            grid-template-columns: 200px 1fr 350px;
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .logo-text {
+            font-size: 1.4em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        
+        .logo-text span {
+            color: var(--accent-primary);
+        }
+        
+        .header-status {
+            display: flex;
+            align-items: center;
             gap: 20px;
         }
         
+        /* 主布局 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 20px;
+        }
+        
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        /* 面板通用样式 */
         .panel {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
             padding: 20px;
-            backdrop-filter: blur(10px);
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
         }
         
         .panel h3 {
-            color: #ffa500;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid rgba(255, 165, 0, 0.3);
+            color: var(--text-primary);
+            font-size: 0.9em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
-        /* 侧边栏 */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
+        .panel h3 .key-hint {
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--text-muted);
+            text-transform: none;
+            letter-spacing: 0;
         }
         
+        .panel-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-accent);
+            border-radius: 4px;
+            color: var(--text-secondary);
+        }
+        
+        /* 状态指示器 */
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
+            gap: 10px;
         }
         
         .status-dot {
-            width: 12px;
-            height: 12px;
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            background: #4CAF50;
-            animation: pulse 2s infinite;
+            background: var(--danger);
+            box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
         }
         
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        .status-dot.connected {
+            background: var(--accent-primary);
+            box-shadow: 0 0 8px rgba(0, 212, 170, 0.5);
         }
         
-        .sidebar button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background: linear-gradient(145deg, #ffa500, #ff8c00);
-            color: #1a1a2e;
-            font-weight: bold;
+        .status-text {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        .quick-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
         }
         
-        .sidebar button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.4);
+        .btn:hover {
+            background: var(--bg-card);
+            border-color: var(--text-muted);
         }
         
-        .sidebar button.danger {
-            background: linear-gradient(145deg, #e74c3c, #c0392b);
+        .btn-accent {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        
+        .btn-accent:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+        
+        .btn-danger {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .btn-danger:hover {
+            background: var(--danger);
             color: white;
         }
         
-        /* 控制器部分 */
-        .controller-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
+        /* 控制器网格 */
         .controller-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
-            gap: 5px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
-        }
-        
-        .controller-grid form {
-            display: contents;
+            gap: 6px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
         }
         
         .controller-grid button {
             width: 100%;
-            height: 45px;
-            border: none;
+            height: 44px;
+            border: 1px solid var(--border-accent);
             border-radius: 8px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.15s;
-            font-size: 14px;
+            transition: all 0.15s ease;
+            font-size: 12px;
+            background: var(--bg-card);
+            color: var(--text-primary);
         }
         
         .controller-grid button:hover:not(:disabled) {
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .controller-grid button:active:not(:disabled) {
-            transform: scale(0.95);
+            transform: translateY(0);
         }
         
-        /* 按钮颜色分类 */
+        /* 按钮分类颜色 - 简约版 */
         .btn-shoulder {
-            background: linear-gradient(145deg, #607d8b, #455a64);
-            color: white;
+            background: linear-gradient(180deg, #2d2d2d 0%, #252525 100%);
+            border-color: #3a3a3a;
         }
         
         .btn-action {
-            background: linear-gradient(145deg, #2196F3, #1976D2);
-            color: white;
+            background: linear-gradient(180deg, #1a3a5c 0%, #152d47 100%);
+            border-color: #2a5080;
+            color: #6ab0ff;
         }
         
         .btn-dpad {
-            background: linear-gradient(145deg, #333333, #222222);
-            color: white;
+            background: linear-gradient(180deg, #1f1f1f 0%, #181818 100%);
+            border-color: #2a2a2a;
         }
         
         .btn-stick {
-            background: linear-gradient(145deg, #9c27b0, #7b1fa2);
-            color: white;
+            background: linear-gradient(180deg, #2d1f3d 0%, #251a35 100%);
+            border-color: #4a3060;
+            color: #b388ff;
         }
         
         .btn-system {
-            background: linear-gradient(145deg, #ff5722, #e64a19);
-            color: white;
+            background: linear-gradient(180deg, #3d2a1a 0%, #352315 100%);
+            border-color: #5a4020;
+            color: #ffb74d;
         }
         
         .btn-special {
-            background: linear-gradient(145deg, #4CAF50, #388E3C);
-            color: white;
+            background: linear-gradient(180deg, #1a3d2a 0%, #153525 100%);
+            border-color: #2a5a40;
+            color: var(--accent-primary);
         }
         
-        .btn-empty {
-            background: transparent;
-            cursor: default;
+        /* 占位格子 */
+        .controller-grid i {
+            display: block;
         }
         
-        /* 右侧面板 */
-        .right-panel {
+        .btn-pressed {
+            transform: scale(0.95) !important;
+            border-color: var(--accent-primary) !important;
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.3), inset 0 0 10px rgba(0, 212, 170, 0.1) !important;
+        }
+        
+        /* 脚本区域 */
+        .script-row {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            gap: 12px;
         }
         
-        .script-area {
+        .script-row form {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .script-row form:first-child {
             flex: 1;
         }
         
-        .script-area textarea {
-            width: 100%;
-            height: 200px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 165, 0, 0.3);
+        .script-row textarea {
+            flex: 1;
+            height: 80px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: #fff;
-            padding: 10px;
-            font-family: 'Consolas', monospace;
+            color: var(--text-primary);
+            padding: 12px;
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 12px;
             resize: vertical;
+            transition: border-color 0.2s;
         }
         
-        .script-area textarea:focus {
+        .script-row textarea:focus {
             outline: none;
-            border-color: #ffa500;
+            border-color: var(--accent-primary);
+        }
+        
+        .script-row textarea::placeholder {
+            color: var(--text-muted);
         }
         
         .script-buttons {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .script-buttons button {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
+            flex-direction: column;
+            gap: 6px;
         }
         
         .btn-run {
-            background: linear-gradient(145deg, #4CAF50, #388E3C);
-            color: white;
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+        
+        .btn-run:hover {
+            background: var(--accent-hover);
         }
         
         .btn-stop {
-            background: linear-gradient(145deg, #f44336, #d32f2f);
+            background: transparent;
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .btn-stop:hover {
+            background: var(--danger);
             color: white;
         }
         
-        /* Amiibo 部分 */
-        .amiibo-section {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            padding: 15px;
-        }
-        
-        .amiibo-section h4 {
-            color: #ffa500;
-            margin-bottom: 10px;
-        }
-        
-        .amiibo-status {
-            padding: 8px;
-            background: rgba(76, 175, 80, 0.2);
-            border-radius: 5px;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .file-upload {
+        /* 右侧：Amiibo 库 */
+        .amiibo-library {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            height: calc(100vh - 120px);
+            max-height: 720px;
         }
         
-        .file-upload input[type="file"] {
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px dashed rgba(255, 165, 0, 0.5);
-            border-radius: 8px;
-            color: #fff;
-        }
-        
-        .amiibo-buttons {
+        /* Amiibo 标签页 */
+        .amiibo-tabs {
             display: flex;
-            gap: 10px;
+            gap: 4px;
+            margin-bottom: 12px;
         }
         
-        .amiibo-buttons button {
+        .amiibo-tabs button {
             flex: 1;
             padding: 10px;
-            border: none;
-            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px 6px 0 0;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
             cursor: pointer;
-            font-weight: bold;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border-bottom: none;
+        }
+        
+        .amiibo-tabs button.active {
+            background: var(--bg-card);
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+            border-bottom: 1px solid var(--bg-card);
+        }
+        
+        /* Amiibo 搜索栏 */
+        .amiibo-search {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .amiibo-search input {
+            flex: 1;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+        
+        .amiibo-search input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        .amiibo-search input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .amiibo-search button {
+            padding: 10px 14px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
             transition: all 0.2s;
         }
         
-        .btn-upload {
-            background: linear-gradient(145deg, #2196F3, #1976D2);
-            color: white;
+        .amiibo-search button:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
         }
         
-        .btn-remove {
-            background: linear-gradient(145deg, #ff9800, #f57c00);
-            color: white;
+        /* Amiibo 内容区 */
+        .amiibo-content {
+            flex: 1;
+            display: flex;
+            gap: 12px;
+            overflow: hidden;
         }
         
-        .btn-clean {
-            background: linear-gradient(145deg, #9e9e9e, #757575);
-            color: white;
-        }
-        
-        /* 消息区域 */
-        .message-area {
-            margin-top: 20px;
-        }
-        
-        .message-area textarea {
-            width: 100%;
-            height: 100px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        /* 树状导航 */
+        .amiibo-tree {
+            width: 130px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            color: #aaa;
+            padding: 8px;
+            overflow-y: auto;
+        }
+        
+        .tree-node {
+            cursor: pointer;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+        
+        .tree-node:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .tree-node.active {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent-primary);
+            border: 1px solid rgba(0, 212, 170, 0.3);
+        }
+        
+        .tree-node .count {
+            font-size: 10px;
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 10px;
+            color: var(--text-muted);
+        }
+        
+        /* Amiibo 列表 */
+        .amiibo-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .amiibo-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .amiibo-item:hover {
+            background: var(--bg-card);
+            border-color: var(--border-accent);
+            transform: translateX(4px);
+        }
+        
+        .amiibo-item.selected {
+            border-color: var(--accent-primary);
+            background: rgba(0, 212, 170, 0.05);
+        }
+        
+        .amiibo-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: var(--text-muted);
+        }
+        
+        .amiibo-icon img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 6px;
+        }
+        
+        .amiibo-info {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .amiibo-info .name {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        
+        .amiibo-info .meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+        
+        .amiibo-actions {
+            display: flex;
+            gap: 6px;
+        }
+        
+        .amiibo-actions button {
+            width: 30px;
+            height: 30px;
+            border: 1px solid var(--border-accent);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+        
+        .amiibo-actions .btn-scan {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+        
+        .amiibo-actions .btn-scan:hover {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+        
+        .amiibo-actions .btn-restore {
+            border-color: var(--info);
+            color: var(--info);
+        }
+        
+        .amiibo-actions .btn-restore:hover {
+            background: var(--info);
+            color: white;
+        }
+        
+        .amiibo-actions .btn-delete {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        
+        .amiibo-actions .btn-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        /* 底部操作栏 */
+        .amiibo-footer {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .amiibo-upload {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .amiibo-upload input[type="file"] {
+            flex: 1;
             padding: 10px;
-            font-family: 'Consolas', monospace;
-            resize: none;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border-accent);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .amiibo-upload input[type="file"]:hover {
+            border-color: var(--accent-primary);
+        }
+        
+        .amiibo-upload button {
+            padding: 10px 16px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 6px;
+            color: var(--bg-primary);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .amiibo-upload button:hover {
+            background: var(--accent-hover);
+        }
+        
+        /* 当前 Amiibo 状态 */
+        .current-amiibo-status {
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .current-amiibo-status .label {
+            font-size: 12px;
+            color: var(--accent-primary);
+        }
+        
+        .current-amiibo-status button {
+            padding: 6px 12px;
+            background: transparent;
+            border: 1px solid var(--warning);
+            border-radius: 4px;
+            color: var(--warning);
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        
+        .current-amiibo-status button:hover {
+            background: var(--warning);
+            color: var(--bg-primary);
+        }
+        
+        /* 外部库面板 */
+        .external-library {
+            display: none;
+        }
+        
+        .external-library.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .external-path {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .external-path input {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 12px;
+        }
+        
+        .external-path input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+        
+        .external-tree {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .external-series {
+            margin-bottom: 4px;
+        }
+        
+        .external-series-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .external-series-header:hover {
+            border-color: var(--border-accent);
+        }
+        
+        .external-series-header .toggle {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        
+        .external-series-header .name {
+            flex: 1;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .external-series-header .count {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .external-series-header .btn-import-all {
+            padding: 4px 10px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 4px;
+            color: var(--bg-primary);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .external-series-header .btn-import-all:hover {
+            background: var(--accent-hover);
+        }
+        
+        .external-files {
+            display: none;
+            padding-left: 20px;
+            padding-top: 6px;
+        }
+        
+        .external-files.expanded {
+            display: block;
+        }
+        
+        .external-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+        
+        .external-file:hover {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+        
+        .external-file .name {
+            flex: 1;
+        }
+        
+        .external-file .btn-import {
+            padding: 3px 8px;
+            background: transparent;
+            border: 1px solid var(--info);
+            border-radius: 4px;
+            color: var(--info);
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .external-file .btn-import:hover {
+            background: var(--info);
+            color: white;
+        }
+        
+        /* 消息提示 */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 24px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            z-index: 1000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            font-size: 13px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .toast.success {
+            border-left: 3px solid var(--accent-primary);
+        }
+        
+        .toast.error {
+            border-left: 3px solid var(--danger);
+        }
+        
+        .toast.info {
+            border-left: 3px solid var(--info);
+        }
+        
+        /* 空状态和提示 */
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px;
+        }
+        
+        .error-state {
+            color: var(--danger);
+            padding: 20px;
+        }
+        
+        .hide {
+            display: none !important;
         }
         
         footer {
             text-align: center;
             padding: 20px;
             margin-top: 20px;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
+            font-size: 11px;
+            letter-spacing: 0.5px;
         }
         
-        /* 响应式设计 */
-        @media (max-width: 1024px) {
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        footer a:hover {
+            color: var(--accent-primary);
+        }
+        
+        /* 响应式 */
+        @media (max-width: 960px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
             
-            .sidebar {
-                flex-direction: row;
-                flex-wrap: wrap;
+            .amiibo-library {
+                height: auto;
+                max-height: 500px;
             }
-            
-            .sidebar > * {
-                flex: 1;
-                min-width: 100px;
-            }
+        }
+        
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-accent);
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🎮 RasCon Ver.2.0 - Pro Controller</h1>
+            <div class="logo">
+                <div class="logo-icon">🎮</div>
+                <div class="logo-text">RasCon <span>Pro</span></div>
+            </div>
+            <div class="quick-actions">
+                <form action="/bluez" method="POST">
+                    <button type="submit" name="btn" value="ON" class="btn btn-accent">连接</button>
+                </form>
+                <form action="/bluez" method="POST">
+                    <button type="submit" name="btn" value="OFF" class="btn btn-danger">断开</button>
+                </form>
+                <div class="status-indicator">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span class="status-text" id="status-text">未连接</span>
+                </div>
+            </div>
         </header>
         
         <div class="main-content">
-            <!-- 左侧边栏 -->
-            <div class="panel sidebar">
-                <h3>状态</h3>
-                <div class="status-indicator">
-                    <div class="status-dot"></div>
-                    <span>已连接</span>
+            <!-- 左侧：控制器 + 脚本 -->
+            <div class="left-section">
+                
+                <!-- 控制器 -->
+                <div class="panel">
+                    <h3>Pro Controller <span class="key-hint">(WASD=左摇杆 方向键=右摇杆 空格=A 回车=B)</span></h3>
+                    <div class="controller-grid">
+                        <!-- 行1: 肩键 -->
+                        <button data-btn="zl" class="btn-shoulder">ZL</button>
+                        <button data-btn="l" class="btn-shoulder">L</button>
+                        <i></i><i></i><i></i>
+                        <button data-btn="r" class="btn-shoulder">R</button>
+                        <button data-btn="zr" class="btn-shoulder">ZR</button>
+                        <!-- 行2: +/- -->
+                        <i></i><i></i>
+                        <button data-btn="minus" class="btn-system">-</button>
+                        <i></i>
+                        <button data-btn="plus" class="btn-system">+</button>
+                        <i></i><i></i>
+                        <!-- 行3: 左摇杆上 / X -->
+                        <i></i>
+                        <button data-btn="ls up,100" class="btn-stick">↑</button>
+                        <i></i><i></i><i></i>
+                        <button data-btn="x" class="btn-action">X</button>
+                        <i></i>
+                        <!-- 行4: 左摇杆 / Y/A -->
+                        <button data-btn="ls left,100" class="btn-stick">←</button>
+                        <button data-btn="l_stick" class="btn-stick">●</button>
+                        <button data-btn="ls right,100" class="btn-stick">→</button>
+                        <i></i>
+                        <button data-btn="y" class="btn-action">Y</button>
+                        <i></i>
+                        <button data-btn="a" class="btn-action">A</button>
+                        <!-- 行5: 左摇杆下 / B -->
+                        <i></i>
+                        <button data-btn="ls down,100" class="btn-stick">↓</button>
+                        <i></i><i></i><i></i>
+                        <button data-btn="b" class="btn-action">B</button>
+                        <i></i>
+                        <!-- 行6: 方向键上 / 右摇杆上 -->
+                        <i></i>
+                        <button data-btn="up" class="btn-dpad">▲</button>
+                        <i></i><i></i><i></i>
+                        <button data-btn="rs up,100" class="btn-stick">↑</button>
+                        <i></i>
+                        <!-- 行7: 方向键 / 右摇杆 -->
+                        <button data-btn="left" class="btn-dpad">◀</button>
+                        <i></i>
+                        <button data-btn="right" class="btn-dpad">▶</button>
+                        <i></i>
+                        <button data-btn="rs left,100" class="btn-stick">←</button>
+                        <button data-btn="r_stick" class="btn-stick">●</button>
+                        <button data-btn="rs right,100" class="btn-stick">→</button>
+                        <!-- 行8: 方向键下 / 右摇杆下 -->
+                        <i></i>
+                        <button data-btn="down" class="btn-dpad">▼</button>
+                        <i></i><i></i><i></i>
+                        <button data-btn="rs down,100" class="btn-stick">↓</button>
+                        <i></i>
+                        <!-- 行9: Capture / Home -->
+                        <i></i><i></i>
+                        <button data-btn="capture" class="btn-special">📷</button>
+                        <i></i>
+                        <button data-btn="home" class="btn-special">🏠</button>
+                        <i></i><i></i>
+                    </div>
                 </div>
                 
-                <h3>蓝牙</h3>
-                <form action="/bluez" method="POST">
-                    <button name="btn" value="ON">连接</button>
-                </form>
-                <form action="/bluez" method="POST">
-                    <button name="btn" value="OFF" class="danger">断开</button>
-                </form>
-                
-                <h3>系统</h3>
-                <form action="/raspi" method="POST">
-                    <button name="btn" value="sudo reboot" class="danger">重启</button>
-                </form>
-                <form action="/raspi" method="POST">
-                    <button name="btn" value="sudo shutdown" class="danger">关机</button>
-                </form>
-                
-                <form action="/amiibos">
-                    <button>批量刷Amiibo</button>
-                </form>
-            </div>
-            
-            <!-- 控制器主区域 -->
-            <div class="controller-section panel">
-                <h3>Pro Controller</h3>
-                <div class="controller-grid">
-                    <!-- 第1行: 肩键 -->
-                    <form action="/btn" method="POST"><button name="btn" value="zl" class="btn-shoulder">ZL</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="l" class="btn-shoulder">L</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="r" class="btn-shoulder">R</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="zr" class="btn-shoulder">ZR</button></form>
-                    
-                    <!-- 第2行: +/- 按钮 -->
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="minus" class="btn-system">-</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="plus" class="btn-system">+</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    
-                    <!-- 第3行: 左摇杆上 / X -->
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="ls up,100" class="btn-stick">↑</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="x" class="btn-action">X</button></form>
-                    <button class="btn-empty" disabled></button>
-                    
-                    <!-- 第4行: 左摇杆左/按下/右 / Y / A -->
-                    <form action="/btn" method="POST"><button name="btn" value="ls left,100" class="btn-stick">←</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="l_stick" class="btn-stick">●</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="ls right,100" class="btn-stick">→</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="y" class="btn-action">Y</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="a" class="btn-action">A</button></form>
-                    
-                    <!-- 第5行: 左摇杆下 / B -->
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="ls down,100" class="btn-stick">↓</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="b" class="btn-action">B</button></form>
-                    <button class="btn-empty" disabled></button>
-                    
-                    <!-- 第6行: 方向键上 / 右摇杆上 -->
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="up" class="btn-dpad">▲</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="rs up,100" class="btn-stick">↑</button></form>
-                    <button class="btn-empty" disabled></button>
-                    
-                    <!-- 第7行: 方向键左/右 / 右摇杆左/按下/右 -->
-                    <form action="/btn" method="POST"><button name="btn" value="left" class="btn-dpad">◀</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="right" class="btn-dpad">▶</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="rs left,100" class="btn-stick">←</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="r_stick" class="btn-stick">●</button></form>
-                    <form action="/btn" method="POST"><button name="btn" value="rs right,100" class="btn-stick">→</button></form>
-                    
-                    <!-- 第8行: 方向键下 / 右摇杆下 -->
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="down" class="btn-dpad">▼</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="rs down,100" class="btn-stick">↓</button></form>
-                    <button class="btn-empty" disabled></button>
-                    
-                    <!-- 第9行: Capture / Home -->
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="capture" class="btn-special">📷</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <form action="/btn" method="POST"><button name="btn" value="home" class="btn-special">🏠</button></form>
-                    <button class="btn-empty" disabled></button>
-                    <button class="btn-empty" disabled></button>
-                </div>
-                
-                <div class="message-area">
-                    <h4>消息日志</h4>
-                    <textarea readonly>{{msg}}</textarea>
-                </div>
-            </div>
-            
-            <!-- 右侧面板 -->
-            <div class="right-panel">
-                <div class="panel script-area">
+                <!-- 脚本区 -->
+                <div class="panel">
                     <h3>脚本</h3>
-                    <form action="/script/run" method="POST">
-                        <textarea name="script" placeholder="# 在这里输入脚本命令...
-# 示例:
-# a          - 按A键
-# wait 1000  - 等待1秒
-# for 5      - 循环5次
-#   b
-# next">{{script}}</textarea>
-                        <div class="script-buttons">
-                            <button type="submit" class="btn-run">▶ 运行</button>
-                        </div>
-                    </form>
-                    <form action="/script/stop" method="POST">
-                        <div class="script-buttons">
-                            <button type="submit" class="btn-stop">⏹ 停止</button>
-                        </div>
-                    </form>
+                    <div class="script-row">
+                        <form action="/script/run" method="POST">
+                            <textarea name="script" placeholder="# 脚本命令: a, wait 1000, for 5...">{{script}}</textarea>
+                            <div class="script-buttons">
+                                <button type="submit" class="btn-run">▶ 运行</button>
+                            </div>
+                        </form>
+                        <form action="/script/stop" method="POST">
+                            <div class="script-buttons">
+                                <button type="submit" class="btn-stop">⏹ 停止</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧：Amiibo 库 -->
+            <div class="panel amiibo-library">
+                <h3>📦 Amiibo 库</h3>
+                
+                <!-- 标签页 -->
+                <div class="amiibo-tabs">
+                    <button class="active" onclick="switchAmiiboTab('my-library')">我的库</button>
+                    <button onclick="switchAmiiboTab('external-library')">外部库</button>
                 </div>
                 
-                <div class="panel amiibo-section">
-                    <h3>Amiibo</h3>
-                    {% if amiibo %}
-                    <div class="amiibo-status">{{ amiibo }}</div>
-                    {% endif %}
-                    <form action="/amiibo/upload" method="POST" enctype="multipart/form-data" class="file-upload">
-                        <input type="file" name="file" accept=".bin" />
-                        <div class="amiibo-buttons">
-                            <button type="submit" class="btn-upload">上传</button>
+                <!-- 我的库 -->
+                <div id="my-library" class="my-library">
+                    <!-- 搜索栏 -->
+                    <div class="amiibo-search">
+                        <input type="text" id="amiibo-search-input" placeholder="搜索 Amiibo..." onkeyup="searchAmiibo(this.value)">
+                        <button onclick="refreshAmiiboList()">🔄</button>
+                    </div>
+                    
+                    <!-- 内容区 -->
+                    <div class="amiibo-content">
+                        <!-- 树状导航 -->
+                        <div class="amiibo-tree" id="amiibo-tree">
+                            <div class="tree-node active" data-filter="all">
+                                <span>全部</span>
+                                <span class="count" id="total-count">0</span>
+                            </div>
+                            <!-- 动态加载的系列分类 -->
                         </div>
-                    </form>
-                    <div class="amiibo-buttons" style="margin-top: 10px;">
-                        <form action="/btn" method="POST" style="flex: 1;">
-                            <button name="btn" value="amiibo remove" class="btn-remove" style="width: 100%;">移除</button>
+                        
+                        <!-- 列表视图 -->
+                        <div class="amiibo-list" id="amiibo-list">
+                            <div class="empty-state">
+                                正在加载 Amiibo 库...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 上传区 -->
+                    <div class="amiibo-footer">
+                        <form id="amiibo-upload-form" class="amiibo-upload">
+                            <input type="file" id="amiibo-file" accept=".bin" multiple title="选择Amiibo文件">
+                            <button type="button" onclick="uploadAmiibo()">上传</button>
                         </form>
-                        <form action="/btn" method="POST" style="flex: 1;">
-                            <button name="btn" value="amiibo clean" class="btn-clean" style="width: 100%;">清空</button>
-                        </form>
+                        
+                        <!-- 当前 Amiibo 状态 -->
+                        <div class="current-amiibo-status hide" id="current-amiibo-status">
+                            <div>
+                                <span class="label">当前 Amiibo:</span>
+                                <span id="current-amiibo-name"></span>
+                            </div>
+                            <button onclick="removeCurrentAmiibo()">移除</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 外部库 -->
+                <div id="external-library" class="external-library">
+                    <div class="external-path">
+                        <input type="text" id="external-path" placeholder="外部库路径 (留空使用默认)">
+                        <button onclick="scanExternalLibrary()">扫描</button>
+                    </div>
+                    
+                    <div class="external-tree" id="external-tree">
+                        <div class="empty-state">
+                            点击"扫描"浏览外部 Amiibo 库
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         
         <footer>
-            <p>&copy; 2020-2026 RasCon - Python 3.11+ 适配版</p>
+            &copy; 2020-2026 RasCon - Python 3.11+ 适配版 | Amiibo 库集成版
         </footer>
     </div>
+    
+    <!-- Toast 消息 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== Amiibo 库管理 ====================
+        
+        let allAmiibos = [];
+        let currentFilter = 'all';
+        let externalTree = null;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initControllerButtons();
+            document.addEventListener('keydown', handleKeyDown);
+            document.addEventListener('keyup', handleKeyUp);
+            
+            // 加载 Amiibo 库
+            refreshAmiiboList();
+            
+            // 定期更新状态
+            setInterval(updateStatus, 3000);
+        });
+        
+        // 切换 Amiibo 标签页
+        function switchAmiiboTab(tabId) {
+            document.querySelectorAll('.amiibo-tabs button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelector('.my-library').style.display = tabId === 'my-library' ? 'flex' : 'none';
+            document.querySelector('.my-library').style.flexDirection = 'column';
+            document.querySelector('.external-library').style.display = tabId === 'external-library' ? 'flex' : 'none';
+            
+            if (tabId === 'my-library') {
+                document.querySelector('.my-library').classList.remove('external-library');
+            }
+        }
+        
+        // 刷新 Amiibo 列表
+        async function refreshAmiiboList() {
+            try {
+                const response = await fetch('/api/amiibo/list');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allAmiibos = data.amiibos;
+                    renderAmiiboTree(data.amiibos);
+                    renderAmiiboList(data.amiibos);
+                    document.getElementById('total-count').textContent = data.amiibos.length;
+                }
+            } catch (error) {
+                console.error('加载 Amiibo 列表失败:', error);
+            }
+        }
+        
+        // 渲染树状导航
+        function renderAmiiboTree(amiibos) {
+            const tree = document.getElementById('amiibo-tree');
+            const seriesMap = {};
+            
+            amiibos.forEach(a => {
+                const series = a.series || '未分类';
+                if (!seriesMap[series]) seriesMap[series] = 0;
+                seriesMap[series]++;
+            });
+            
+            let html = `<div class="tree-node ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="filterBySeries('all')">
+                <span>全部</span>
+                <span class="count">${amiibos.length}</span>
+            </div>`;
+            
+            Object.keys(seriesMap).sort().forEach(series => {
+                html += `<div class="tree-node ${currentFilter === series ? 'active' : ''}" data-filter="${series}" onclick="filterBySeries('${series}')">
+                    <span>${series}</span>
+                    <span class="count">${seriesMap[series]}</span>
+                </div>`;
+            });
+            
+            tree.innerHTML = html;
+        }
+        
+        // 按系列筛选
+        function filterBySeries(series) {
+            currentFilter = series;
+            document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+            document.querySelector(`.tree-node[data-filter="${series}"]`)?.classList.add('active');
+            
+            const filtered = series === 'all' 
+                ? allAmiibos 
+                : allAmiibos.filter(a => (a.series || '未分类') === series);
+            
+            renderAmiiboList(filtered);
+        }
+        
+        // 搜索 Amiibo
+        function searchAmiibo(query) {
+            if (!query) {
+                filterBySeries(currentFilter);
+                return;
+            }
+            
+            const q = query.toLowerCase();
+            const filtered = allAmiibos.filter(a => 
+                a.filename.toLowerCase().includes(q) ||
+                (a.custom_name || '').toLowerCase().includes(q) ||
+                (a.series || '').toLowerCase().includes(q) ||
+                (a.character || '').toLowerCase().includes(q)
+            );
+            
+            renderAmiiboList(filtered);
+        }
+        
+        // 渲染 Amiibo 列表
+        function renderAmiiboList(amiibos) {
+            const list = document.getElementById('amiibo-list');
+            
+            if (amiibos.length === 0) {
+                list.innerHTML = '<div class="empty-state">暂无 Amiibo</div>';
+                return;
+            }
+            
+            list.innerHTML = amiibos.map(a => `
+                <div class="amiibo-item" data-filename="${a.filename}">
+                    <div class="amiibo-icon">
+                        ${a.image_url ? `<img src="${a.image_url}" alt="">` : '🎮'}
+                    </div>
+                    <div class="amiibo-info">
+                        <div class="name">${a.custom_name || a.filename.replace('.bin', '')}</div>
+                        <div class="meta">${a.series || '未分类'} ${a.has_origin ? '• 有备份' : ''}</div>
+                    </div>
+                    <div class="amiibo-actions">
+                        <button class="btn-scan" onclick="scanAmiibo('${a.filename}')" title="扫描">▶</button>
+                        ${a.has_origin ? `<button class="btn-restore" onclick="restoreAmiibo('${a.filename}')" title="恢复">🔄</button>` : ''}
+                        <button class="btn-delete" onclick="deleteAmiibo('${a.filename}')" title="删除">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // 扫描/使用 Amiibo
+        async function scanAmiibo(filename) {
+            try {
+                const response = await fetch('/api/amiibo/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`正在扫描 ${filename}`, 'success');
+                    updateCurrentAmiibo(filename);
+                } else {
+                    showToast(data.error || '扫描失败', 'error');
+                }
+            } catch (error) {
+                showToast('网络错误', 'error');
+            }
+        }
+        
+        // 恢复 Amiibo
+        async function restoreAmiibo(filename) {
+            if (!confirm(`确定要将 ${filename} 恢复到原始状态吗？`)) return;
+            
+            try {
+                const response = await fetch('/api/amiibo/restore', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('已恢复到原始状态', 'success');
+                } else {
+                    showToast(data.error || '恢复失败', 'error');
+                }
+            } catch (error) {
+                showToast('网络错误', 'error');
+            }
+        }
+        
+        // 删除 Amiibo
+        async function deleteAmiibo(filename) {
+            if (!confirm(`确定要删除 ${filename} 吗？`)) return;
+            
+            const removeOrigin = confirm('是否同时删除原始备份？');
+            
+            try {
+                const response = await fetch('/api/amiibo/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, remove_origin: removeOrigin })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast('已删除', 'success');
+                    refreshAmiiboList();
+                } else {
+                    showToast(data.error || '删除失败', 'error');
+                }
+            } catch (error) {
+                showToast('网络错误', 'error');
+            }
+        }
+        
+        // 上传 Amiibo
+        async function uploadAmiibo() {
+            const fileInput = document.getElementById('amiibo-file');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                showToast('请选择文件', 'info');
+                return;
+            }
+            
+            for (const file of files) {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch('/api/amiibo/add', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showToast(`${file.name} 上传成功`, 'success');
+                    } else {
+                        showToast(`${file.name}: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    showToast(`${file.name} 上传失败`, 'error');
+                }
+            }
+            
+            fileInput.value = '';
+            refreshAmiiboList();
+        }
+        
+        // 更新当前 Amiibo 状态
+        function updateCurrentAmiibo(filename) {
+            const status = document.getElementById('current-amiibo-status');
+            const name = document.getElementById('current-amiibo-name');
+            
+            if (filename) {
+                status.classList.remove('hide');
+                name.textContent = filename;
+            } else {
+                status.classList.add('hide');
+            }
+        }
+        
+        // 移除当前 Amiibo
+        async function removeCurrentAmiibo() {
+            try {
+                await fetch('/api/btn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'push', button: 'amiibo remove' })
+                });
+                updateCurrentAmiibo(null);
+                showToast('已移除 Amiibo', 'success');
+            } catch (error) {
+                showToast('移除失败', 'error');
+            }
+        }
+        
+        // ==================== 外部库功能 ====================
+        
+        async function scanExternalLibrary() {
+            const pathInput = document.getElementById('external-path');
+            const tree = document.getElementById('external-tree');
+            
+            tree.innerHTML = '<div class="empty-state">正在扫描...</div>';
+            
+            try {
+                const response = await fetch('/api/amiibo/external/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: pathInput.value })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    externalTree = data.tree;
+                    renderExternalTree(data.tree);
+                    showToast(`发现 ${data.tree.count} 个 Amiibo`, 'success');
+                } else {
+                    tree.innerHTML = `<div class="error-state">${data.error}</div>`;
+                }
+            } catch (error) {
+                tree.innerHTML = '<div class="error-state">扫描失败</div>';
+            }
+        }
+        
+        function renderExternalTree(tree) {
+            const container = document.getElementById('external-tree');
+            
+            if (!tree.children || tree.children.length === 0) {
+                container.innerHTML = '<div class="empty-state">未找到 Amiibo 文件</div>';
+                return;
+            }
+            
+            container.innerHTML = tree.children.map((series, idx) => `
+                <div class="external-series">
+                    <div class="external-series-header" onclick="toggleExternalSeries(${idx})">
+                        <span class="toggle">▶</span>
+                        <span class="name">${series.name}</span>
+                        <span class="count">(${series.count})</span>
+                        <button class="btn-import-all" onclick="importAllFromSeries(${idx}, event)">全部导入</button>
+                    </div>
+                    <div class="external-files" id="external-files-${idx}">
+                        ${series.children.map(file => `
+                            <div class="external-file">
+                                <span class="name">${file.name}</span>
+                                <button class="btn-import" onclick="importSingleAmiibo('${file.path.replace(/\\/g, '\\\\')}', '${series.name}', '${file.name}')">导入</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleExternalSeries(idx) {
+            const files = document.getElementById(`external-files-${idx}`);
+            const header = files.previousElementSibling;
+            const toggle = header.querySelector('.toggle');
+            
+            if (files.classList.contains('expanded')) {
+                files.classList.remove('expanded');
+                toggle.textContent = '▶';
+            } else {
+                files.classList.add('expanded');
+                toggle.textContent = '▼';
+            }
+        }
+        
+        async function importSingleAmiibo(path, series, name) {
+            try {
+                const response = await fetch('/api/amiibo/external/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, series, name })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`已导入 ${name}`, 'success');
+                    refreshAmiiboList();
+                } else {
+                    showToast(data.error || '导入失败', 'error');
+                }
+            } catch (error) {
+                showToast('导入失败', 'error');
+            }
+        }
+        
+        async function importAllFromSeries(idx, event) {
+            event.stopPropagation();
+            
+            if (!externalTree || !externalTree.children[idx]) return;
+            
+            const series = externalTree.children[idx];
+            if (!confirm(`确定要导入 ${series.name} 系列的全部 ${series.count} 个 Amiibo 吗？`)) return;
+            
+            const items = series.children.map(file => ({
+                path: file.path,
+                series: series.name,
+                name: file.name
+            }));
+            
+            try {
+                const response = await fetch('/api/amiibo/external/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const data = await response.json();
+                
+                showToast(`成功导入 ${data.success} 个，失败 ${data.failed} 个`, 
+                    data.failed > 0 ? 'info' : 'success');
+                refreshAmiiboList();
+            } catch (error) {
+                showToast('批量导入失败', 'error');
+            }
+        }
+        
+        // ==================== Toast 消息 ====================
+        
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // ==================== 按键长按和键盘快捷键支持 ====================
+        
+        // 键盘映射配置
+        const keyMap = {
+            // WASD -> 左摇杆
+            'KeyW': { type: 'stick', stick: 'ls', direction: 'up' },
+            'KeyA': { type: 'stick', stick: 'ls', direction: 'left' },
+            'KeyS': { type: 'stick', stick: 'ls', direction: 'down' },
+            'KeyD': { type: 'stick', stick: 'ls', direction: 'right' },
+            // 方向键 -> 右摇杆
+            'ArrowUp': { type: 'stick', stick: 'rs', direction: 'up' },
+            'ArrowLeft': { type: 'stick', stick: 'rs', direction: 'left' },
+            'ArrowDown': { type: 'stick', stick: 'rs', direction: 'down' },
+            'ArrowRight': { type: 'stick', stick: 'rs', direction: 'right' },
+            // 常用按键
+            'Space': { type: 'button', button: 'a' },
+            'Enter': { type: 'button', button: 'b' },
+            'KeyQ': { type: 'button', button: 'l' },
+            'KeyE': { type: 'button', button: 'r' },
+            'KeyZ': { type: 'button', button: 'zl' },
+            'KeyC': { type: 'button', button: 'zr' },
+            'KeyX': { type: 'button', button: 'x' },
+            'KeyY': { type: 'button', button: 'y' },
+            'KeyH': { type: 'button', button: 'home' },
+            'KeyP': { type: 'button', button: 'plus' },
+            'KeyM': { type: 'button', button: 'minus' },
+            'KeyK': { type: 'button', button: 'capture' },
+            // 十字键 (Shift + 方向键)
+            'ShiftArrowUp': { type: 'button', button: 'up' },
+            'ShiftArrowDown': { type: 'button', button: 'down' },
+            'ShiftArrowLeft': { type: 'button', button: 'left' },
+            'ShiftArrowRight': { type: 'button', button: 'right' },
+        };
+
+        // 当前按下的键
+        const pressedKeys = new Set();
+        
+        // 发送按键命令
+        async function sendButton(action, button) {
+            try {
+                const response = await fetch('/api/btn', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, button: button })
+                });
+                const data = await response.json();
+                if (!data.success) {
+                    console.error('按键命令失败:', data.error);
+                }
+            } catch (error) {
+                console.error('网络错误:', error);
+            }
+        }
+
+        // 处理鼠标/触摸按下
+        function handleButtonPress(button, buttonValue) {
+            button.classList.add('pressed');
+            sendButton('press', buttonValue);
+        }
+
+        // 处理鼠标/触摸释放
+        function handleButtonRelease(button, buttonValue) {
+            button.classList.remove('pressed');
+            sendButton('release', buttonValue);
+        }
+
+        // 初始化控制器按钮
+        function initControllerButtons() {
+            const buttons = document.querySelectorAll('.controller-grid button[data-btn]');
+            
+            buttons.forEach(button => {
+                const btnValue = button.getAttribute('data-btn');
+                if (!btnValue) return;
+
+                // 鼠标事件
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    handleButtonPress(button, btnValue);
+                });
+
+                button.addEventListener('mouseup', (e) => {
+                    e.preventDefault();
+                    handleButtonRelease(button, btnValue);
+                });
+
+                button.addEventListener('mouseleave', (e) => {
+                    if (button.classList.contains('pressed')) {
+                        handleButtonRelease(button, btnValue);
+                    }
+                });
+
+                // 触摸事件 (移动设备)
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    handleButtonPress(button, btnValue);
+                });
+
+                button.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    handleButtonRelease(button, btnValue);
+                });
+            });
+        }
+
+        // 键盘事件处理
+        function handleKeyDown(e) {
+            // 如果在输入框中，不处理快捷键
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            const keyCode = (e.shiftKey ? 'Shift' : '') + e.code;
+            const mapping = keyMap[keyCode] || keyMap[e.code];
+            
+            if (mapping && !pressedKeys.has(keyCode)) {
+                e.preventDefault();
+                pressedKeys.add(keyCode);
+                
+                if (mapping.type === 'button') {
+                    sendButton('press', mapping.button);
+                    highlightButton(mapping.button, true);
+                } else if (mapping.type === 'stick') {
+                    sendButton('press', `${mapping.stick} ${mapping.direction}`);
+                    highlightStick(mapping.stick, mapping.direction, true);
+                }
+            }
+        }
+
+        function handleKeyUp(e) {
+            const keyCode = (e.shiftKey ? 'Shift' : '') + e.code;
+            const mapping = keyMap[keyCode] || keyMap[e.code];
+            
+            // 检查所有可能的键码
+            [keyCode, e.code, 'Shift' + e.code].forEach(code => {
+                if (pressedKeys.has(code)) {
+                    pressedKeys.delete(code);
+                    const m = keyMap[code];
+                    if (m) {
+                        if (m.type === 'button') {
+                            sendButton('release', m.button);
+                            highlightButton(m.button, false);
+                        } else if (m.type === 'stick') {
+                            sendButton('release', `${m.stick} ${m.direction}`);
+                            highlightStick(m.stick, m.direction, false);
+                        }
+                    }
+                }
+            });
+        }
+
+        // 高亮按钮
+        function highlightButton(buttonName, active) {
+            const btn = document.querySelector(`button[data-btn="${buttonName}"]`);
+            if (btn) {
+                if (active) {
+                    btn.classList.add('pressed');
+                } else {
+                    btn.classList.remove('pressed');
+                }
+            }
+        }
+
+        // 高亮摇杆
+        function highlightStick(stick, direction, active) {
+            const btn = document.querySelector(`button[data-btn="${stick} ${direction},100"]`);
+            if (btn) {
+                if (active) {
+                    btn.classList.add('pressed');
+                } else {
+                    btn.classList.remove('pressed');
+                }
+            }
+        }
+
+
+        // 状态更新
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                if (data.success) {
+                    const statusDot = document.getElementById('status-dot');
+                    const statusText = document.getElementById('status-text');
+                    const statusMessage = document.getElementById('status-message');
+                    
+                    if (statusDot) {
+                        if (data.connected) {
+                            statusDot.classList.add('connected');
+                        } else {
+                            statusDot.classList.remove('connected');
+                        }
+                    }
+                    
+                    if (statusText) {
+                        statusText.textContent = data.connected ? '已连接' : '未连接';
+                    }
+                    
+                    if (statusMessage && data.joycontrol_message) {
+                        statusMessage.textContent = data.joycontrol_message;
+                    }
+                    
+                    // 更新当前 Amiibo 状态
+                    if (data.current_amiibo) {
+                        updateCurrentAmiibo(data.current_amiibo);
+                    }
+                }
+            } catch (error) {
+                console.error('状态更新失败:', error);
+            }
+        }
+    </script>
 </body>
 </html>
