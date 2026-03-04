@@ -1080,6 +1080,7 @@
                             <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent" style="padding:4px 10px; font-size:11px;">+ 上传</button>
                             <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
                             <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn" style="padding:4px 10px; font-size:11px;" title="切换分组视图">📂 分组</button>
+                            <button onclick="openSubscriptionModal()" class="btn" style="padding:4px 10px; font-size:11px;" title="从 GitHub 仓库下载">🌐 订阅</button>
                             <button onclick="updateAmiiboDatabase()" class="btn" style="padding:4px 10px; font-size:11px;" title="更新 Amiibo 数据库 (AmiiboAPI)">☁️ 更新</button>
                             <button onclick="refreshAmiiboList()" class="btn" style="padding:4px 10px; font-size:11px;" title="刷新列表">🔄</button>
                         </div>
@@ -1141,7 +1142,118 @@ ls reset">{{script}}</textarea>
     <!-- Toast 消息 -->
     <div class="toast" id="toast"></div>
 
+    <!-- Subscription Modal -->
+    <div id="subscription-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
+        <div style="background:var(--bg-secondary); width:600px; max-width:90%; height:80vh; border-radius:12px; border:1px solid var(--border-color); display:flex; flex-direction:column; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h3 style="margin:0; font-size:18px;">🌐 GitHub 订阅库</h3>
+                <button onclick="closeSubscriptionModal()" class="btn" style="border:none; font-size:18px; background:transparent; cursor:pointer; color:var(--text-secondary);">✕</button>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:16px;">
+                <input type="text" id="repo-url-input" placeholder="输入 GitHub 仓库 (例如: User/Repo)" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary);">
+                <button onclick="fetchRepoTree()" class="btn btn-accent">获取列表</button>
+            </div>
+
+            <div id="repo-content" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); padding:10px; display:flex; flex-direction:column; gap:4px;">
+                <div class="empty-state" style="padding:40px; text-align:center; color:var(--text-muted);">请输入仓库地址并点击获取</div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==================== Subscription Logic ====================
+        function openSubscriptionModal() {
+            const modal = document.getElementById('subscription-modal');
+            modal.style.display = 'flex';
+            
+            // 尝试从 localStorage 加载上次的 Repo
+            const lastRepo = localStorage.getItem('last_amiibo_repo');
+            if (lastRepo) document.getElementById('repo-url-input').value = lastRepo;
+        }
+
+        function closeSubscriptionModal() {
+            document.getElementById('subscription-modal').style.display = 'none';
+        }
+
+        async function fetchRepoTree() {
+            const repoInput = document.getElementById('repo-url-input');
+            const repo = repoInput.value.trim();
+            if(!repo) { 
+                showToast('请输入仓库地址', 'error');
+                return;
+            }
+            
+            const contentDiv = document.getElementById('repo-content');
+            contentDiv.innerHTML = '<div class="empty-state" style="padding:20px; text-align:center;">正在从 GitHub API 获取文件列表...</div>';
+            
+            try {
+                const res = await fetch('/api/amiibo/subscription', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({repo})
+                });
+                const data = await res.json();
+                
+                if(data.success) {
+                    localStorage.setItem('last_amiibo_repo', data.repo); // Save successful repo
+                    renderRepoFiles(data.files);
+                } else {
+                    contentDiv.innerHTML = `<div class="error-state" style="text-align:center; padding:20px;">${data.error}</div>`;
+                }
+            } catch(e) {
+                contentDiv.innerHTML = `<div class="error-state" style="text-align:center; padding:20px;">网络错误: ${e.message}</div>`;
+            }
+        }
+
+        function renderRepoFiles(files) {
+             const contentDiv = document.getElementById('repo-content');
+             if(!files || files.length === 0) {
+                 contentDiv.innerHTML = '<div class="empty-state" style="padding:20px; text-align:center;">该仓库未找到 .bin 文件</div>';
+                 return;
+             }
+             
+             // 简单的按路径显示
+             contentDiv.innerHTML = files.map(f => {
+                const displayName = f.name;
+                const pathParts = f.path.split('/');
+                const displayPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : 'Root';
+                
+                return `
+                <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--border-color); font-size:13px; background:var(--bg-tertiary); border-radius:6px; margin-bottom:4px;">
+                    <div style="margin-right:12px; font-size:16px;">📄</div>
+                    <div style="flex:1; overflow:hidden;">
+                        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500;" title="${f.name}">${displayName}</div>
+                        <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">${displayPath} · ${(f.size/1024).toFixed(1)} KB</div>
+                    </div>
+                    <button onclick="downloadRepoFile('${f.url}', '${f.name}')" class="btn btn-sm btn-accent" style="padding:4px 12px; margin-left:8px;">⬇ 下载</button>
+                </div>
+             `}).join('');
+        }
+
+        async function downloadRepoFile(url, name) {
+            if(!confirm(`确认下载 ${name}?`)) return;
+            
+            showToast(`正在下载 ${name}...`, 'info');
+            try {
+                const res = await fetch('/api/amiibo/download', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url: url, name: name})
+                });
+                const data = await res.json();
+                if(data.success) {
+                    showToast('下载成功！已添加到库', 'success');
+                    closeSubscriptionModal(); // Optional: keep open to download more? Maybe keep open.
+                    refreshAmiiboList(); // 刷新背景的主列表
+                } else {
+                    showToast(`下载失败: ${data.error}`, 'error');
+                }
+            } catch(e) {
+                showToast(`请求失败: ${e.message}`, 'error');
+            }
+        }
+
         // ==================== Amiibo 库管理 ====================
         
         let allAmiibos = [];

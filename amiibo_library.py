@@ -33,7 +33,7 @@ AMIIBO_DATA.mkdir(exist_ok=True)
 AMIIBO_IMAGES.mkdir(exist_ok=True)
 
 # AmiiboDB API
-AMIIBODB_API = "https://www.amiiboapi.com/api/amiibo/"
+AMIIBODB_API = "https://amiiboapi.org/api/amiibo/"
 
 
 class AmiiboLibrary:
@@ -46,13 +46,19 @@ class AmiiboLibrary:
     def update_master_database(self) -> Dict[str, Any]:
         """从 AmiiboAPI 更新主数据库"""
         try:
-            print("正在从 AmiiboAPI 下载数据库...")
-            response = requests.get(AMIIBODB_API)
+            print(f"正在下载数据库: {AMIIBODB_API}")
+            headers = {'User-Agent': 'RasCon-Pro-Switch-Controller/1.0'}
+            # 请求 API
+            response = requests.get(AMIIBODB_API, headers=headers) 
             if response.status_code == 200:
                 data = response.json()
                 # 建立 ID -> Info 的映射
                 cache = {}
-                for item in data.get('amiibo', []):
+                
+                # 兼容 API 返回格式 {'amiibo': [...]}
+                items = data.get('amiibo', []) if isinstance(data, dict) else data
+                
+                for item in items:
                     # 格式化 ID: head + tail
                     head = item.get('head', '')
                     tail = item.get('tail', '')
@@ -67,6 +73,82 @@ class AmiiboLibrary:
                 return {'success': True, 'count': len(cache)}
             else:
                 return {'success': False, 'error': f"HTTP Error: {response.status_code}"}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def fetch_github_repo_tree(self, repo_url: str) -> Dict[str, Any]:
+        """
+        获取 GitHub 仓库的文件树
+        支持格式: 
+        - https://github.com/Owner/Repo
+        - Owner/Repo
+        """
+        try:
+            # 解析 Owner/Repo
+            parts = repo_url.strip('/').split('/')
+            if 'github.com' in repo_url:
+                owner = parts[-2]
+                repo = parts[-1]
+            elif len(parts) == 2:
+                owner = parts[0]
+                repo = parts[1]
+            else:
+                return {'success': False, 'error': '无效的 GitHub 仓库地址'}
+            
+            # 使用 GitHub API 获取树 (限制递归深度以防太慢，这里用 recursive=1)
+            # 默认分支通常是 master 或 main，API 会自动处理默认分支
+            # 但为了准确，最好先获取默认分支，这里简化直接请求 commits/HEAD 获取 tree
+            
+            api_url = f"https://api.github.com/repos/{owner}/{repo}/git/trees/HEAD?recursive=1"
+            print(f"Fetching GitHub Tree: {api_url}")
+            
+            headers = {'User-Agent': 'RasCon-Pro-Switch-Controller'}
+            response = requests.get(api_url, headers=headers, verify=False)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('truncated', False):
+                    print("Warning: Tree is truncated")
+                
+                # 过滤 .bin 文件
+                files = []
+                for item in data.get('tree', []):
+                    if item['type'] == 'blob' and item['path'].lower().endswith('.bin'):
+                        files.append({
+                            'path': item['path'],
+                            'name': item['path'].split('/')[-1],
+                            'size': item.get('size', 0),
+                            'url': f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{item['path']}" # 构造下载链接
+                        })
+                
+                return {'success': True, 'files': files, 'repo': f"{owner}/{repo}"}
+            else:
+                 return {'success': False, 'error': f"GitHub API Error: {response.status_code} - {response.text}"}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def download_file_from_url(self, url: str, target_filename: Optional[str] = None) -> Dict[str, Any]:
+        """从 URL 下载文件并添加到库"""
+        try:
+            if not target_filename:
+                target_filename = url.split('/')[-1]
+            
+            response = requests.get(url, verify=False)
+            if response.status_code == 200:
+                # 临时保存
+                temp_path = AMIIBO_BASE / 'temp_download.bin'
+                with open(temp_path, 'wb') as f:
+                    f.write(response.content)
+                
+                # 添加到库
+                result = self.add_amiibo(str(temp_path), target_filename)
+                
+                if temp_path.exists():
+                    temp_path.unlink()
+                    
+                return result
+            else:
+                return {'success': False, 'error': f"Download failed: {response.status_code}"}
         except Exception as e:
             return {'success': False, 'error': str(e)}
 

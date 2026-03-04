@@ -279,6 +279,37 @@ def api_amiibo_external_import():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/amiibo/subscription', methods=['POST'])
+def api_amiibo_subscription():
+    """AJAX API: 订阅仓库信息"""
+    try:
+        data = request.get_json()
+        repo_url = data.get('repo', '')
+        
+        # 使用 GitHub API 获取文件列表
+        from amiibo_library import library
+        result = library.fetch_github_repo_tree(repo_url)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/download', methods=['POST'])
+def api_amiibo_download():
+    """AJAX API: 下载并添加 Amiibo"""
+    try:
+        data = request.get_json()
+        url = data.get('url', '')
+        name = data.get('name', '')
+        
+        if not url:
+            return jsonify({'success': False, 'error': '下载链接为空'})
+            
+        from amiibo_library import library
+        result = library.download_file_from_url(url, name)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/amiibo/updatesource', methods=['POST'])
 def api_amiibo_update_source():
     """AJAX API: 更新 AmiiboDB 数据库源"""
