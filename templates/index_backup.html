@@ -92,7 +92,7 @@
         /* 主布局 */
         .main-content {
             display: grid;
-            grid-template-columns: 420px 1fr;
+            grid-template-columns: 1fr 380px;
             gap: 20px;
         }
         
@@ -100,13 +100,6 @@
             display: flex;
             flex-direction: column;
             gap: 16px;
-        }
-
-        .right-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            height: calc(100vh - 120px);
         }
         
         /* 面板通用样式 */
@@ -198,17 +191,6 @@
             border-color: var(--text-muted);
         }
         
-        .btn-sm {
-            padding: 4px 8px;
-            font-size: 11px;
-            height: auto;
-        }
-
-        .btn-lg {
-            padding: 12px 20px;
-            font-size: 14px;
-        }
-        
         .btn-accent {
             background: var(--accent-primary);
             border-color: var(--accent-primary);
@@ -255,13 +237,13 @@
         }
         
         .controller-grid button:hover:not(:disabled) {
+            transform: translateY(-2px);
             border-color: var(--accent-primary);
-            background: var(--bg-card);
-            filter: brightness(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .controller-grid button:active:not(:disabled) {
-            filter: brightness(0.8);
+            transform: translateY(0);
         }
         
         /* 按钮分类颜色 - 简约版 */
@@ -305,37 +287,9 @@
         }
         
         .btn-pressed {
-            background-color: var(--accent-primary) !important;
-            color: var(--bg-primary) !important;
+            transform: scale(0.95) !important;
             border-color: var(--accent-primary) !important;
-            filter: brightness(1.2) !important;
-        }
-        
-        /* 脚本区域 - 调整为全高 */
-        .script-panel {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .script-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            height: 100%;
-        }
-
-        .script-container textarea {
-            flex: 1;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            padding: 12px;
-            font-family: 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 13px;
-            line-height: 1.6;
-            resize: none;
+            box-shadow: 0 0 20px rgba(0, 212, 170, 0.3), inset 0 0 10px rgba(0, 212, 170, 0.1) !important;
         }
         
         /* 脚本区域 */
@@ -1061,60 +1015,91 @@
                     </div>
                 </div>
                 
-                <!-- Amiibo 库 (简化版资源列表) -->
+                <!-- 脚本区 -->
                 <div class="panel">
-                    <div class="panel-header" style="justify-content: space-between; border-bottom: none; padding-bottom: 0;">
-                        <h3>📦 Amiibo 资源</h3>
-                        <div class="amiibo-simple-actions" style="display:flex; gap:8px;">
-                            <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent" style="padding:4px 10px; font-size:11px;">+ 上传</button>
-                            <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
-                            <button onclick="refreshAmiiboList()" class="btn" style="padding:4px 10px; font-size:11px;">🔄</button>
-                        </div>
-                    </div>
-                    
-                    <div class="amiibo-search" style="margin-bottom:10px;">
-                        <input type="text" id="amiibo-search-input" placeholder="搜索文件名..." onkeyup="searchAmiibo(this.value)" 
-                               style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); font-size:13px;">
-                    </div>
-
-                    <div id="amiibo-list" class="amiibo-simple-list" style="height: 380px; overflow-y: auto; display:flex; flex-direction:column; gap:6px;">
-                        <div class="empty-state">正在加载...</div>
-                    </div>
-                    
-                    <div id="current-amiibo-status" class="current-amiibo-status hide" style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,212,170,0.1); padding:8px; border-radius:6px; font-size:12px;">
-                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;">
-                            <span class="label" style="color:var(--accent-primary);">当前:</span>
-                            <span id="current-amiibo-name" style="font-weight:bold; color:var(--text-primary);"></span>
-                        </div>
-                        <button onclick="removeCurrentAmiibo()" class="btn btn-danger" style="padding:2px 8px; font-size:10px;">移除</button>
+                    <h3>脚本</h3>
+                    <div class="script-row">
+                        <form action="/script/run" method="POST">
+                            <textarea name="script" placeholder="# 脚本命令: a, wait 1000, for 5...">{{script}}</textarea>
+                            <div class="script-buttons">
+                                <button type="submit" class="btn-run">▶ 运行</button>
+                            </div>
+                        </form>
+                        <form action="/script/stop" method="POST">
+                            <div class="script-buttons">
+                                <button type="submit" class="btn-stop">⏹ 停止</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
             
-            <!-- 右侧：脚本控制台 -->
-            <div class="right-section panel">
-                <h3>📜 脚本控制台</h3>
-                <div class="script-container">
-                    <form action="/script/run" method="POST" id="script-form" style="display:contents">
-                        <textarea name="script" id="script-area" spellcheck="false" placeholder="# 脚本示例:
-# 按下A键
-a
-# 等待1秒
-wait 1000
-# 左摇杆向左推到底
-ls left,100
-# 等待2秒
-wait 2000
-# 摇杆回中
-ls reset">{{script}}</textarea>
-                    </form>
+            <!-- 右侧：Amiibo 库 -->
+            <div class="panel amiibo-library">
+                <h3>📦 Amiibo 库</h3>
+                
+                <!-- 标签页 -->
+                <div class="amiibo-tabs">
+                    <button class="active" onclick="switchAmiiboTab('my-library')">我的库</button>
+                    <button onclick="switchAmiiboTab('external-library')">外部库</button>
+                </div>
+                
+                <!-- 我的库 -->
+                <div id="my-library" class="my-library">
+                    <!-- 搜索栏 -->
+                    <div class="amiibo-search">
+                        <input type="text" id="amiibo-search-input" placeholder="搜索 Amiibo..." onkeyup="searchAmiibo(this.value)">
+                        <button onclick="refreshAmiiboList()">🔄</button>
+                    </div>
                     
-                    <div class="script-buttons" style="display:flex; gap:10px; margin-top:10px;">
-                        <button type="submit" form="script-form" class="btn btn-accent" style="flex:2; padding:12px; font-size:14px;">▶ 运行脚本</button>
-                        <form action="/script/stop" method="POST" style="display:contents">
-                            <button type="submit" class="btn btn-danger" style="flex:1;">⏹ 停止</button>
+                    <!-- 内容区 -->
+                    <div class="amiibo-content">
+                        <!-- 树状导航 -->
+                        <div class="amiibo-tree" id="amiibo-tree">
+                            <div class="tree-node active" data-filter="all">
+                                <span>全部</span>
+                                <span class="count" id="total-count">0</span>
+                            </div>
+                            <!-- 动态加载的系列分类 -->
+                        </div>
+                        
+                        <!-- 列表视图 -->
+                        <div class="amiibo-list" id="amiibo-list">
+                            <div class="empty-state">
+                                正在加载 Amiibo 库...
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 上传区 -->
+                    <div class="amiibo-footer">
+                        <form id="amiibo-upload-form" class="amiibo-upload">
+                            <input type="file" id="amiibo-file" accept=".bin" multiple title="选择Amiibo文件">
+                            <button type="button" onclick="uploadAmiibo()">上传</button>
                         </form>
-                        <button type="button" class="btn" style="flex:0 0 auto;" onclick="document.getElementById('script-area').value=''">清空</button>
+                        
+                        <!-- 当前 Amiibo 状态 -->
+                        <div class="current-amiibo-status hide" id="current-amiibo-status">
+                            <div>
+                                <span class="label">当前 Amiibo:</span>
+                                <span id="current-amiibo-name"></span>
+                            </div>
+                            <button onclick="removeCurrentAmiibo()">移除</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 外部库 -->
+                <div id="external-library" class="external-library">
+                    <div class="external-path">
+                        <input type="text" id="external-path" placeholder="外部库路径 (留空使用默认)">
+                        <button onclick="scanExternalLibrary()">扫描</button>
+                    </div>
+                    
+                    <div class="external-tree" id="external-tree">
+                        <div class="empty-state">
+                            点击"扫描"浏览外部 Amiibo 库
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1132,6 +1117,8 @@ ls reset">{{script}}</textarea>
         // ==================== Amiibo 库管理 ====================
         
         let allAmiibos = [];
+        let currentFilter = 'all';
+        let externalTree = null;
         
         // 初始化
         document.addEventListener('DOMContentLoaded', () => {
@@ -1146,7 +1133,21 @@ ls reset">{{script}}</textarea>
             setInterval(updateStatus, 3000);
         });
         
-        // 刷新 Amiibo 列表 (简单版)
+        // 切换 Amiibo 标签页
+        function switchAmiiboTab(tabId) {
+            document.querySelectorAll('.amiibo-tabs button').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelector('.my-library').style.display = tabId === 'my-library' ? 'flex' : 'none';
+            document.querySelector('.my-library').style.flexDirection = 'column';
+            document.querySelector('.external-library').style.display = tabId === 'external-library' ? 'flex' : 'none';
+            
+            if (tabId === 'my-library') {
+                document.querySelector('.my-library').classList.remove('external-library');
+            }
+        }
+        
+        // 刷新 Amiibo 列表
         async function refreshAmiiboList() {
             try {
                 const response = await fetch('/api/amiibo/list');
@@ -1154,24 +1155,67 @@ ls reset">{{script}}</textarea>
                 
                 if (data.success) {
                     allAmiibos = data.amiibos;
-                    renderAmiiboList(allAmiibos);
+                    renderAmiiboTree(data.amiibos);
+                    renderAmiiboList(data.amiibos);
+                    document.getElementById('total-count').textContent = data.amiibos.length;
                 }
             } catch (error) {
                 console.error('加载 Amiibo 列表失败:', error);
             }
         }
         
+        // 渲染树状导航
+        function renderAmiiboTree(amiibos) {
+            const tree = document.getElementById('amiibo-tree');
+            const seriesMap = {};
+            
+            amiibos.forEach(a => {
+                const series = a.series || '未分类';
+                if (!seriesMap[series]) seriesMap[series] = 0;
+                seriesMap[series]++;
+            });
+            
+            let html = `<div class="tree-node ${currentFilter === 'all' ? 'active' : ''}" data-filter="all" onclick="filterBySeries('all')">
+                <span>全部</span>
+                <span class="count">${amiibos.length}</span>
+            </div>`;
+            
+            Object.keys(seriesMap).sort().forEach(series => {
+                html += `<div class="tree-node ${currentFilter === series ? 'active' : ''}" data-filter="${series}" onclick="filterBySeries('${series}')">
+                    <span>${series}</span>
+                    <span class="count">${seriesMap[series]}</span>
+                </div>`;
+            });
+            
+            tree.innerHTML = html;
+        }
+        
+        // 按系列筛选
+        function filterBySeries(series) {
+            currentFilter = series;
+            document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active'));
+            document.querySelector(`.tree-node[data-filter="${series}"]`)?.classList.add('active');
+            
+            const filtered = series === 'all' 
+                ? allAmiibos 
+                : allAmiibos.filter(a => (a.series || '未分类') === series);
+            
+            renderAmiiboList(filtered);
+        }
+        
         // 搜索 Amiibo
         function searchAmiibo(query) {
             if (!query) {
-                renderAmiiboList(allAmiibos);
+                filterBySeries(currentFilter);
                 return;
             }
             
             const q = query.toLowerCase();
             const filtered = allAmiibos.filter(a => 
                 a.filename.toLowerCase().includes(q) ||
-                (a.custom_name || '').toLowerCase().includes(q)
+                (a.custom_name || '').toLowerCase().includes(q) ||
+                (a.series || '').toLowerCase().includes(q) ||
+                (a.character || '').toLowerCase().includes(q)
             );
             
             renderAmiiboList(filtered);
@@ -1180,24 +1224,25 @@ ls reset">{{script}}</textarea>
         // 渲染 Amiibo 列表
         function renderAmiiboList(amiibos) {
             const list = document.getElementById('amiibo-list');
-            if (!list) return;
             
             if (amiibos.length === 0) {
-                list.innerHTML = '<div class="empty-state" style="padding:20px; text-align:center; color:var(--text-muted); font-size:12px;">暂无 Amiibo 文件</div>';
+                list.innerHTML = '<div class="empty-state">暂无 Amiibo</div>';
                 return;
             }
             
             list.innerHTML = amiibos.map(a => `
-                <div class="amiibo-item" data-filename="${a.filename}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary); margin-bottom:4px; transition:all 0.2s;">
-                    <div class="amiibo-info" style="display:flex; align-items:center; gap:8px; overflow:hidden; flex:1;">
-                        <div class="amiibo-icon" style="font-size:16px;">📄</div>
-                        <div class="name" style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-primary);" title="${a.filename}">
-                            ${a.custom_name || a.filename.replace('.bin', '')}
-                        </div>
+                <div class="amiibo-item" data-filename="${a.filename}">
+                    <div class="amiibo-icon">
+                        ${a.image_url ? `<img src="${a.image_url}" alt="">` : '🎮'}
                     </div>
-                    <div class="amiibo-actions" style="display:flex; gap:4px;">
-                        <button class="btn btn-sm" onclick="scanAmiibo('${a.filename}')" title="使用" style="padding:4px 8px; font-size:10px; border:1px solid var(--accent-primary); color:var(--accent-primary); background:transparent; border-radius:4px; cursor:pointer;">▶ 使用</button>
-                        <button class="btn btn-sm" onclick="deleteAmiibo('${a.filename}')" title="删除" style="padding:4px 8px; font-size:10px; border:1px solid var(--border-accent); color:var(--text-secondary); background:transparent; border-radius:4px; cursor:pointer;">🗑</button>
+                    <div class="amiibo-info">
+                        <div class="name">${a.custom_name || a.filename.replace('.bin', '')}</div>
+                        <div class="meta">${a.series || '未分类'} ${a.has_origin ? '• 有备份' : ''}</div>
+                    </div>
+                    <div class="amiibo-actions">
+                        <button class="btn-scan" onclick="scanAmiibo('${a.filename}')" title="扫描">▶</button>
+                        ${a.has_origin ? `<button class="btn-restore" onclick="restoreAmiibo('${a.filename}')" title="恢复">🔄</button>` : ''}
+                        <button class="btn-delete" onclick="deleteAmiibo('${a.filename}')" title="删除">🗑</button>
                     </div>
                 </div>
             `).join('');
@@ -1331,6 +1376,126 @@ ls reset">{{script}}</textarea>
                 showToast('已移除 Amiibo', 'success');
             } catch (error) {
                 showToast('移除失败', 'error');
+            }
+        }
+        
+        // ==================== 外部库功能 ====================
+        
+        async function scanExternalLibrary() {
+            const pathInput = document.getElementById('external-path');
+            const tree = document.getElementById('external-tree');
+            
+            tree.innerHTML = '<div class="empty-state">正在扫描...</div>';
+            
+            try {
+                const response = await fetch('/api/amiibo/external/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: pathInput.value })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    externalTree = data.tree;
+                    renderExternalTree(data.tree);
+                    showToast(`发现 ${data.tree.count} 个 Amiibo`, 'success');
+                } else {
+                    tree.innerHTML = `<div class="error-state">${data.error}</div>`;
+                }
+            } catch (error) {
+                tree.innerHTML = '<div class="error-state">扫描失败</div>';
+            }
+        }
+        
+        function renderExternalTree(tree) {
+            const container = document.getElementById('external-tree');
+            
+            if (!tree.children || tree.children.length === 0) {
+                container.innerHTML = '<div class="empty-state">未找到 Amiibo 文件</div>';
+                return;
+            }
+            
+            container.innerHTML = tree.children.map((series, idx) => `
+                <div class="external-series">
+                    <div class="external-series-header" onclick="toggleExternalSeries(${idx})">
+                        <span class="toggle">▶</span>
+                        <span class="name">${series.name}</span>
+                        <span class="count">(${series.count})</span>
+                        <button class="btn-import-all" onclick="importAllFromSeries(${idx}, event)">全部导入</button>
+                    </div>
+                    <div class="external-files" id="external-files-${idx}">
+                        ${series.children.map(file => `
+                            <div class="external-file">
+                                <span class="name">${file.name}</span>
+                                <button class="btn-import" onclick="importSingleAmiibo('${file.path.replace(/\\/g, '\\\\')}', '${series.name}', '${file.name}')">导入</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function toggleExternalSeries(idx) {
+            const files = document.getElementById(`external-files-${idx}`);
+            const header = files.previousElementSibling;
+            const toggle = header.querySelector('.toggle');
+            
+            if (files.classList.contains('expanded')) {
+                files.classList.remove('expanded');
+                toggle.textContent = '▶';
+            } else {
+                files.classList.add('expanded');
+                toggle.textContent = '▼';
+            }
+        }
+        
+        async function importSingleAmiibo(path, series, name) {
+            try {
+                const response = await fetch('/api/amiibo/external/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path, series, name })
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast(`已导入 ${name}`, 'success');
+                    refreshAmiiboList();
+                } else {
+                    showToast(data.error || '导入失败', 'error');
+                }
+            } catch (error) {
+                showToast('导入失败', 'error');
+            }
+        }
+        
+        async function importAllFromSeries(idx, event) {
+            event.stopPropagation();
+            
+            if (!externalTree || !externalTree.children[idx]) return;
+            
+            const series = externalTree.children[idx];
+            if (!confirm(`确定要导入 ${series.name} 系列的全部 ${series.count} 个 Amiibo 吗？`)) return;
+            
+            const items = series.children.map(file => ({
+                path: file.path,
+                series: series.name,
+                name: file.name
+            }));
+            
+            try {
+                const response = await fetch('/api/amiibo/external/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items })
+                });
+                const data = await response.json();
+                
+                showToast(`成功导入 ${data.success} 个，失败 ${data.failed} 个`, 
+                    data.failed > 0 ? 'info' : 'success');
+                refreshAmiiboList();
+            } catch (error) {
+                showToast('批量导入失败', 'error');
             }
         }
         
