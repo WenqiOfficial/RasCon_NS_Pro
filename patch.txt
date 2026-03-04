@@ -1,0 +1,32 @@
+diff --git a/command.py b/command.py
+index dbfb97a..43b8f9f 100644
+--- a/command.py
++++ b/command.py
+@@ -7,6 +7,7 @@ import shlex
+ 
+ from aioconsole import ainput
+ from joycontrol.controller_state import button_push, ControllerState
++from joycontrol.nfc_tag import NFCTag
+ 
+ logger = logging.getLogger(__name__)
+ 
+@@ -102,12 +103,14 @@ class CCLI():
+         Sets nfc content of the controller state to contents of the given file.
+         :param fileBName: amiibo文件名(文件固定放在项目文件夹的file/amiibo里)
+         """
+-        loop = asyncio.get_event_loop()
+-
+-        with open('file/amiibo/'+fileName, 'rb') as amiibo_file:
+-            content = await loop.run_in_executor(None, amiibo_file.read)
+-            self.controller_state.set_nfc(content)
+-            print('amiibo设置成功')
++        path = 'file/amiibo/'+fileName
++        tag = NFCTag.load_amiibo(path)
++        self.controller_state.set_nfc(tag)
++        #loop = asyncio.get_event_loop()
++        #with open('file/amiibo/'+fileName, 'rb') as amiibo_file:
++        #    content = await loop.run_in_executor(None, amiibo_file.read)
++        #    self.controller_state.set_nfc(content)
++        print('amiibo设置成功')
+ 
+     def set_stick(self,stick, direction, value=None):

@@ -1,0 +1,18 @@
+# RasCon_NS 依赖
+# Python 3.11.2+ 兼容
+
+# Web 框架
+flask>=2.0.0
+
+# 异步控制台输入
+aioconsole>=0.6.0
+
+# CRC 校验 (Amiibo NFC)
+crc8
+
+# HID 设备支持
+hid
+
+# 以下依赖仅在 Linux 系统上需要:
+# dbus-python  # 蓝牙 D-Bus 接口
+# 安装方式: sudo apt install python3-dbus
