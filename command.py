@@ -141,10 +141,10 @@ class CCLI():
                          await button_press(self.controller_state, btn)
                          print(f'press {btn}')
                      elif btn in self.available_sticks:
-                         # 摇杆长按
+                         # 摇杆长按：解析 "up,100" -> "up"
                          if len(args) > 1:
-                             direction = args[1]
-                             self.cmd_stick_hold(btn, direction)
+                             direction = args[1].split(',')[0]  # 去掉逗号后的数值
+                             await self.cmd_stick_hold(btn, direction)
              elif cmd == 'release':  # 释放按键（长按结束）
                  if args:
                      btn = args[0]
@@ -153,43 +153,33 @@ class CCLI():
                          print(f'release {btn}')
                      elif btn in self.available_sticks:
                          # 释放摇杆
-                         self.release_stick(btn)
+                         await self.release_stick(btn)
              else: #错误代码
                  print('command',cmd,'not found')
 
-
-    def is_connected(self):
-        """检查是否已连接到 Switch"""
-        try:
-            protocol = self.controller_state._protocol
-            return protocol is not None and protocol.transport is not None
-        except AttributeError:
-            return False
 
     async def set_amiibo(self, fileName):
         """
         Sets nfc content of the controller state to contents of the given file.
         :param fileName: amiibo文件名(文件固定放在项目文件夹的file/amiibo里)
         """
+        import os
         try:
-            # 检查连接状态
-            if not self.is_connected():
-                self.update_status(message='未连接到 Switch，无法使用 Amiibo')
-                print('amiibo设置失败: 未连接到 Switch')
-                return
+            # 优先使用 data 目录（amiibo_library 使用的新路径）
+            path = 'file/amiibo/data/' + fileName
+            if not os.path.exists(path):
+                # 回退到旧路径
+                path = 'file/amiibo/' + fileName
             
-            path = 'file/amiibo/' + fileName
+            if not os.path.exists(path):
+                self.update_status(message=f'Amiibo 文件不存在: {fileName}')
+                print(f'amiibo设置失败: 文件不存在 {path}')
+                return
+                
             tag = NFCTag.load_amiibo(path)
             self.controller_state.set_nfc(tag)
             self.update_status(amiibo=fileName, message=f'已加载 Amiibo: {fileName}')
-            print('amiibo设置成功')
-        except OSError as e:
-            if 'transport endpoint' in str(e).lower() or 'not connected' in str(e).lower():
-                self.update_status(connected=False, message='连接已断开，请重新连接')
-                print(f'amiibo设置失败: 连接已断开')
-            else:
-                self.update_status(message=f'Amiibo 加载失败: {e}')
-                print(f'amiibo设置失败: {e}')
+            print(f'amiibo设置成功: {path}')
         except Exception as e:
             self.update_status(message=f'Amiibo 加载失败: {e}')
             print(f'amiibo设置失败: {e}')
@@ -270,7 +260,7 @@ class CCLI():
         else:
             await self.stickOff(stick)
 
-    def cmd_stick_hold(self, side, direction):
+    async def cmd_stick_hold(self, side, direction):
         """
         摇杆长按开始 - 设置摇杆位置但不自动释放
         :param side: 'ls' 左摇杆, 'rs' 右摇杆
@@ -285,13 +275,12 @@ class CCLI():
                 return
             
             self.set_stick(stick, direction)
-            # 发送状态但不等待
-            asyncio.create_task(self.controller_state.send())
+            await self.controller_state.send()
             print(f'stick hold: {side} {direction}')
         except Exception as e:
             print(f'摇杆长按失败: {e}')
 
-    def release_stick(self, side):
+    async def release_stick(self, side):
         """
         释放摇杆 - 将摇杆回到中心位置
         :param side: 'ls' 左摇杆, 'rs' 右摇杆
@@ -305,7 +294,7 @@ class CCLI():
                 return
             
             stick.set_center()
-            asyncio.create_task(self.controller_state.send())
+            await self.controller_state.send()
             print(f'stick release: {side}')
         except Exception as e:
             print(f'摇杆释放失败: {e}')

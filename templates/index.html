@@ -1367,8 +1367,7 @@
                     <form action="/script/run" method="POST" id="script-form">
                         <textarea name="script" id="script-area" spellcheck="false" placeholder="# 按A键&#10;a&#10;# 等待1秒&#10;wait 1000&#10;# 左摇杆推左&#10;ls left,100">{{script}}</textarea>
                         <div class="script-actions">
-                            <button type="button" onclick="runScript()" class="btn btn-accent btn-sm btn-flex">▶ 运行</button>
-                            <button type="button" onclick="stopScript()" class="btn btn-danger btn-sm">⏹ 停止</button>
+                            <button type="button" id="script-toggle-btn" onclick="toggleScript()" class="btn btn-accent btn-sm btn-flex">▶ 运行</button>
                             <button type="button" onclick="document.getElementById('script-area').value=''" class="btn btn-sm">🗑</button>
                         </div>
                     </form>
@@ -1413,6 +1412,29 @@
         }
 
         // ==================== Script Logic ====================
+        let isScriptRunning = false;
+        
+        async function toggleScript() {
+            if (isScriptRunning) {
+                await stopScript();
+            } else {
+                await runScript();
+            }
+        }
+        
+        function updateScriptButton() {
+            const btn = document.getElementById('script-toggle-btn');
+            if (!btn) return;
+            
+            if (isScriptRunning) {
+                btn.innerHTML = '⏹ 停止';
+                btn.className = 'btn btn-danger btn-sm btn-flex';
+            } else {
+                btn.innerHTML = '▶ 运行';
+                btn.className = 'btn btn-accent btn-sm btn-flex';
+            }
+        }
+        
         async function runScript() {
             const script = document.getElementById('script-area').value;
             if(!script.trim()) return;
@@ -1427,8 +1449,13 @@
                     body: 'script=' + encodeURIComponent(script)
                 });
                 const data = await res.json();
-                if(data.success) showToast('脚本开始运行', 'success');
-                else showToast('运行失败: ' + data.error, 'error');
+                if(data.success) {
+                    isScriptRunning = true;
+                    updateScriptButton();
+                    showToast('脚本开始运行', 'success');
+                } else {
+                    showToast('运行失败: ' + data.error, 'error');
+                }
             } catch(e) { showToast('请求失败', 'error'); }
         }
 
@@ -1438,6 +1465,8 @@
                     method: 'POST',
                     headers: {'X-Requested-With': 'XMLHttpRequest'}
                 });
+                isScriptRunning = false;
+                updateScriptButton();
                 showToast('脚本已停止', 'info');
             } catch(e) {}
         }
