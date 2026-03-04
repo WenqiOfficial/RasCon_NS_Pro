@@ -89,21 +89,20 @@
             gap: 20px;
         }
         
-        /* 主布局 */
+        /* 主布局 - 桌面：控制器左侧(宽)，侧边栏右侧(窄) */
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 360px; /* Controller gets more space */
+            grid-template-columns: 1fr 380px;
             gap: 16px;
-            height: calc(100vh - 90px);
-            overflow: hidden;
+            height: calc(100vh - 130px);
+            min-height: 500px;
         }
         
         .left-section {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            overflow: hidden; /* For controller centering */
             height: 100%;
+            min-height: 0;
         }
 
         .right-section {
@@ -111,38 +110,65 @@
             flex-direction: column;
             gap: 12px;
             height: 100%;
-            overflow: hidden;
-            min-width: 0;
+            min-height: 0;
         }
 
-        /* 响应式调整 */
-        @media (max-width: 960px) {
+        /* 响应式 - 竖屏/移动端：控制器 -> Amiibo -> 脚本 */
+        @media (max-width: 1024px) {
             .main-content {
                 grid-template-columns: 1fr;
                 height: auto;
-                overflow: visible;
+            }
+            .left-section {
+                height: auto;
+                min-height: 400px;
             }
             .right-section {
                 height: auto;
-                overflow: visible;
+            }
+            .sidebar-panel-amiibo {
+                min-height: 350px;
+            }
+            .sidebar-panel-script {
+                order: 10; /* 竖屏时脚本放最后 */
             }
         }
         
+        /* 控制器容器 */
         .controller-grid-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            width: 100%;
-            overflow: auto;
+            flex: 1;
+            min-height: 350px;
+            padding: 10px;
         }
 
         .controller-grid {
-             margin: 0 auto;
-             /* Scale transform here if needed for responsiveness */
+            margin: 0 auto;
         }
 
-        /* Fullscreen Controller */
+        /* 控制器面板 */
+        .controller-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        /* 全屏模式 */
+        .fullscreen-active .main-content {
+            display: block;
+        }
+        
+        .fullscreen-active .right-section {
+            display: none;
+        }
+        
+        .fullscreen-active header,
+        .fullscreen-active footer {
+            display: none;
+        }
+
         .fullscreen-active .left-section {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -155,6 +181,8 @@
         .fullscreen-active .left-section .panel {
             height: 100%;
             border: none;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         
@@ -460,6 +488,166 @@
             flex-direction: column;
             height: calc(100vh - 120px);
             max-height: 720px;
+        }
+
+        /* 侧边栏面板样式 */
+        .sidebar-panel-amiibo {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 300px;
+            overflow: hidden;
+        }
+
+        .sidebar-panel-script {
+            flex: 0 0 200px;
+            display: flex;
+            flex-direction: column;
+            min-height: 180px;
+        }
+
+        /* Amiibo 视图 */
+        #amiibo-library-view,
+        #amiibo-subscription-view {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        #amiibo-subscription-view {
+            display: none;
+        }
+
+        .amiibo-simple-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 4px;
+        }
+
+        .amiibo-toolbar {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .amiibo-search-input {
+            flex: 1;
+            min-width: 120px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-size: 13px;
+        }
+
+        .amiibo-search-input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .current-amiibo-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .current-amiibo-status .label {
+            color: var(--accent-primary);
+        }
+
+        .current-amiibo-status .current-name {
+            font-weight: bold;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #repo-content {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            padding: 8px;
+        }
+
+        /* 脚本区域 */
+        #script-form {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            gap: 8px;
+        }
+
+        #script-area {
+            flex: 1;
+            min-height: 80px;
+            padding: 10px;
+            resize: none;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 6px;
+        }
+
+        #script-area:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .script-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .script-header {
+            border: none !important;
+            margin-bottom: 8px !important;
+            padding-bottom: 0 !important;
+        }
+
+        .script-header h3 {
+            font-size: 13px;
+        }
+
+        .script-header small {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-left: 10px;
+        }
+
+        .btn-flex {
+            flex: 1;
+        }
+
+        /* 空状态样式 */
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 30px 15px;
+            font-size: 13px;
+        }
+
+        .empty-state small {
+            font-size: 11px;
+            color: var(--text-muted);
+            opacity: 0.7;
         }
         
         /* Amiibo 标签页 */
@@ -998,18 +1186,6 @@
             color: var(--accent-primary);
         }
         
-        /* 响应式 */
-        @media (max-width: 960px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .amiibo-library {
-                height: auto;
-                max-height: 500px;
-            }
-        }
-        
         /* 滚动条样式 */
         ::-webkit-scrollbar {
             width: 6px;
@@ -1057,17 +1233,16 @@
             <div class="left-section controller-section">
                 
                 <!-- 控制器 -->
-                <div class="panel" style="display:flex; flex-direction:column; height:100%; justify-content:center;">
+                <div class="panel controller-panel">
                     <div class="panel-header">
                         <h3>Pro Controller <span class="key-hint">(WASD=左摇杆 方向键=右摇杆 空格=A 回车=B)</span></h3>
                         <div class="window-controls">
-                            <!-- Fullscreen Toggle -->
                             <button onclick="toggleFullscreen()" class="btn btn-sm" title="全屏模式">⛶</button>
                         </div>
                     </div>
                     <div class="controller-grid-container">
-                    <div class="controller-grid">
-                        <!-- 行1: 肩键 -->
+                        <div class="controller-grid">
+                            <!-- 行1: 肩键 -->
                         <button data-btn="zl" class="btn-shoulder">ZL</button>
                         <button data-btn="l" class="btn-shoulder">L</button>
                         <i></i><i></i><i></i>
@@ -1120,14 +1295,14 @@
                         <button data-btn="rs down,100" class="btn-stick">↓</button>
                         <i></i>
                         <!-- 行9: Capture / Home -->
-                        <i></i><i></i>
-                        <button data-btn="capture" class="btn-special">📷</button>
-                        <i></i>
-                        <button data-btn="home" class="btn-special">🏠</button>
-                        <i></i><i></i>
+                            <i></i><i></i>
+                            <button data-btn="capture" class="btn-special">📷</button>
+                            <i></i>
+                            <button data-btn="home" class="btn-special">🏠</button>
+                            <i></i><i></i>
+                        </div>
                     </div>
                 </div>
-                
             </div>
             
             <!-- Right Section: Sidebar (Amiibo & Script) -->
@@ -1140,49 +1315,49 @@
                     </div>
                     
                     <!-- View: Library -->
-                    <div id="amiibo-library-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
-                        <div class="amiibo-simple-actions" style="display:flex; gap:8px; margin-bottom:8px;">
-                            <input type="text" id="amiibo-search-input" placeholder="🔍 搜索..." onkeyup="searchAmiibo(this.value)" style="flex:1; padding:6px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary);">
-                             <button onclick="refreshAmiiboList()" class="btn btn-sm" title="刷新">🔄</button>
+                    <div id="amiibo-library-view">
+                        <div class="amiibo-toolbar">
+                            <input type="text" id="amiibo-search-input" class="amiibo-search-input" placeholder="🔍 搜索..." onkeyup="searchAmiibo(this.value)">
+                            <button onclick="refreshAmiiboList()" class="btn btn-sm" title="刷新">🔄</button>
                         </div>
-                        <div class="amiibo-simple-actions" style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+                        <div class="amiibo-toolbar">
                             <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent btn-sm">➕ 上传</button>
-                            <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
+                            <input type="file" id="amiibo-file" accept=".bin" multiple hidden onchange="uploadAmiibo()">
                             <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn btn-sm">📁 分组</button>
                             <button onclick="updateAmiiboDatabase()" class="btn btn-sm">☁️ 更新DB</button>
                         </div>
-                        <div id="amiibo-list" class="amiibo-simple-list" style="flex:1; overflow-y:auto;">
-                             <div class="empty-state">正在加载...</div>
+                        <div id="amiibo-list" class="amiibo-simple-list">
+                            <div class="empty-state">正在加载...</div>
                         </div>
-                         <div id="current-amiibo-status" class="current-amiibo-status hide" style="margin-top:8px; padding:6px;">
+                        <div id="current-amiibo-status" class="current-amiibo-status hide">
                             <span class="label">使用中:</span>
-                            <span id="current-amiibo-name" style="font-weight:bold; margin-left:4px;"></span>
-                            <button onclick="removeCurrentAmiibo()" class="btn btn-danger btn-sm" style="margin-left:auto;">移除</button>
+                            <span id="current-amiibo-name" class="current-name"></span>
+                            <button onclick="removeCurrentAmiibo()" class="btn btn-danger btn-sm">移除</button>
                         </div>
                     </div>
                     
                     <!-- View: Subscription -->
-                    <div id="amiibo-subscription-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
-                         <div style="display:flex; gap:6px; margin-bottom:8px;">
-                             <input type="text" id="repo-url-input" placeholder="GitHub: User/Repo" style="flex:1; padding:6px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary); font-size:12px;">
-                             <button onclick="fetchRepoTree()" class="btn btn-accent btn-sm">获取</button>
-                         </div>
-                         <div id="repo-content" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary); padding:8px;">
-                            <div class="empty-state" style="padding:20px; text-align:center; font-size:12px;">输入 GitHub 仓库地址<br><span style="font-size:10px; color:var(--text-muted)">例如: Falco/amiibo</span></div>
-                         </div>
+                    <div id="amiibo-subscription-view">
+                        <div class="amiibo-toolbar">
+                            <input type="text" id="repo-url-input" class="amiibo-search-input" placeholder="GitHub: User/Repo">
+                            <button onclick="fetchRepoTree()" class="btn btn-accent btn-sm">获取</button>
+                        </div>
+                        <div id="repo-content">
+                            <div class="empty-state">输入 GitHub 仓库地址<br><small>例如: Falco/amiibo</small></div>
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Script Panel -->
                 <div class="panel sidebar-panel-script">
-                    <div class="panel-header" style="height:30px; min-height:30px; padding-bottom:0; margin-bottom:6px; border:none; justify-content: start; gap: 10px;">
-                        <h3 style="font-size:12px;">📜 脚本</h3>
-                        <div style="font-size:10px; color:var(--text-muted);">支持宏命令</div>
+                    <div class="panel-header script-header">
+                        <h3>📜 脚本</h3>
+                        <small>支持宏命令</small>
                     </div>
-                    <form action="/script/run" method="POST" id="script-form" style="display:flex; flex-direction:column; height: 100%; gap:6px;">
-                        <textarea name="script" id="script-area" spellcheck="false" placeholder="# 脚本区域..." style="flex:1; padding:8px; resize:none; font-family:'Consolas',monospace; font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:4px;">{{script}}</textarea>
-                        <div style="display:flex; gap:6px;">
-                            <button type="button" onclick="runScript()" class="btn btn-accent btn-sm" style="flex:1;">▶ 运行</button>
+                    <form action="/script/run" method="POST" id="script-form">
+                        <textarea name="script" id="script-area" spellcheck="false" placeholder="# 按A键&#10;a&#10;# 等待1秒&#10;wait 1000&#10;# 左摇杆推左&#10;ls left,100">{{script}}</textarea>
+                        <div class="script-actions">
+                            <button type="button" onclick="runScript()" class="btn btn-accent btn-sm btn-flex">▶ 运行</button>
                             <button type="button" onclick="stopScript()" class="btn btn-danger btn-sm">⏹ 停止</button>
                             <button type="button" onclick="document.getElementById('script-area').value=''" class="btn btn-sm">🗑</button>
                         </div>
