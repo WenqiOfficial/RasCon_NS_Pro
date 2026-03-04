@@ -279,6 +279,26 @@ def api_amiibo_external_import():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/amiibo/updatesource', methods=['POST'])
+def api_amiibo_update_source():
+    """AJAX API: 更新 AmiiboDB 数据库源"""
+    try:
+        from amiibo_library import library
+        result = library.update_master_database()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/refresh_metadata', methods=['POST'])
+def api_amiibo_refresh_metadata():
+    """AJAX API: 刷新本地 Amiibo 元数据"""
+    try:
+        from amiibo_library import library
+        result = library.refresh_local_amiibos()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/amiibo/update', methods=['POST'])
 def api_amiibo_update():
     """AJAX API: 更新 Amiibo 信息"""

@@ -1080,7 +1080,8 @@
                             <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent" style="padding:4px 10px; font-size:11px;">+ 上传</button>
                             <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
                             <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn" style="padding:4px 10px; font-size:11px;" title="切换分组视图">📂 分组</button>
-                            <button onclick="refreshAmiiboList()" class="btn" style="padding:4px 10px; font-size:11px;" title="刷新">🔄</button>
+                            <button onclick="updateAmiiboDatabase()" class="btn" style="padding:4px 10px; font-size:11px;" title="更新 Amiibo 数据库 (AmiiboAPI)">☁️ 更新</button>
+                            <button onclick="refreshAmiiboList()" class="btn" style="padding:4px 10px; font-size:11px;" title="刷新列表">🔄</button>
                         </div>
                     </div>
                     
@@ -1161,6 +1162,9 @@ ls reset">{{script}}</textarea>
         // 刷新 Amiibo 列表 (简单版)
         async function refreshAmiiboList() {
             try {
+                // 如果是第一次加载，或者显式请求刷新
+                // 推荐：每次打开时如果列表为空，或者没有元数据，可以提示用户是否更新
+                // 但这里我们直接拉取后端列表，后端会尝试从本地缓存填充元数据
                 const response = await fetch('/api/amiibo/list');
                 const data = await response.json();
                 
@@ -1170,9 +1174,41 @@ ls reset">{{script}}</textarea>
                 }
             } catch (error) {
                 console.error('加载 Amiibo 列表失败:', error);
+                showToast('加载列表失败', 'error');
             }
         }
         
+        async function updateAmiiboDatabase() {
+            if (!confirm('是否从 AmiiboAPI 下载最新的 Amiibo 数据库并匹配本地文件？\n这需要联网，可能花费几秒钟。')) return;
+            
+            showToast('正在下载 Amiibo 数据库...', 'info');
+            try {
+                // 更新数据库源
+                const resSource = await fetch('/api/amiibo/updatesource', { method: 'POST' });
+                const dataSource = await resSource.json();
+                
+                if (!dataSource.success) {
+                    throw new Error(dataSource.error || '下载数据库失败');
+                }
+                
+                showToast(`数据库更新成功，正在刷新 ${allAmiibos.length} 个文件的元数据...`, 'info');
+
+                // 刷新本地元数据
+                const resMeta = await fetch('/api/amiibo/refresh_metadata', { method: 'POST' });
+                const dataMeta = await resMeta.json();
+                
+                if (dataMeta.success) {
+                    showToast(`全部完成！已更新 ${dataMeta.updated} 个 Amiibo 的图片和信息。`, 'success');
+                    refreshAmiiboList(); // 重新加载列表显示新数据
+                } else {
+                    throw new Error(dataMeta.error || '匹配元数据时出错');
+                }
+            } catch (error) {
+                console.error(error);
+                showToast(`更新失败: ${error.message}`, 'error');
+            }
+        }
+
         // 搜索 Amiibo
         function searchAmiibo(query) {
             if (!query) {
@@ -1235,14 +1271,21 @@ ls reset">{{script}}</textarea>
                 for (let i = 0; i < rawName.length; i++) hash = rawName.charCodeAt(i) + ((hash << 5) - hash);
                 const color = colors[Math.abs(hash) % colors.length];
                 
-                // 状态标记（假设 a.has_origin 且 a.modified 存在，目前只能通过 has_origin 判断是否存在备份，但无法判断是否修改。这里简化为有备份就显示）
+                // 状态标记
                 const hasBackup = a.has_origin; 
                 
+                // 图片处理
+                let iconHtml = `<div class="amiibo-icon" style="background:${color}1a; color:${color}; border-color:${color}33;">${char}</div>`;
+                if (a.image_url) {
+                    // 使用 object-fit: contain 显示完整图片
+                    iconHtml = `<div class="amiibo-icon" style="background:transparent; border:none; padding:0; overflow:hidden;">
+                         <img src="${a.image_url}" style="width:100%; height:100%; object-fit:contain;" alt="${displayName}" loading="lazy">
+                    </div>`;
+                }
+
                 return `
                 <div class="amiibo-item" data-filename="${a.filename}" onclick="selectAmiibo('${a.filename}')">
-                    <div class="amiibo-icon" style="background:${color}1a; color:${color}; border-color:${color}33;">
-                        ${char}
-                    </div>
+                    ${iconHtml}
                     <div class="amiibo-info">
                         <div class="name" title="${a.filename}">
                             ${displayName}

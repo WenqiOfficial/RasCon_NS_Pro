@@ -14,6 +14,7 @@ import json
 import shutil
 import hashlib
 import struct
+import requests
 from pathlib import Path
 from typing import Optional, Dict, List, Any
 from datetime import datetime
@@ -23,14 +24,16 @@ AMIIBO_BASE = Path('file/amiibo')
 AMIIBO_ORIGIN = AMIIBO_BASE / 'origin'    # 原始备份（只读）
 AMIIBO_DATA = AMIIBO_BASE / 'data'        # 可编辑数据（用于扫描）
 AMIIBO_DB = AMIIBO_BASE / 'database.json' # 本地数据库
+AMIIBO_IMAGES = AMIIBO_BASE / 'images'    # 图片缓存
 
 # 确保目录存在
 AMIIBO_BASE.mkdir(parents=True, exist_ok=True)
 AMIIBO_ORIGIN.mkdir(exist_ok=True)
 AMIIBO_DATA.mkdir(exist_ok=True)
+AMIIBO_IMAGES.mkdir(exist_ok=True)
 
 # AmiiboDB API
-AMIIBODB_API = "https://raw.githubusercontent.com/N3evin/AmiiboAPI/master/database/amiibo.json"
+AMIIBODB_API = "https://www.amiiboapi.com/api/amiibo/"
 
 
 class AmiiboLibrary:
@@ -39,6 +42,101 @@ class AmiiboLibrary:
     def __init__(self):
         self.db = self._load_database()
         self.amiibo_info_cache = None  # AmiiboDB 信息缓存
+
+    def update_master_database(self) -> Dict[str, Any]:
+        """从 AmiiboAPI 更新主数据库"""
+        try:
+            print("正在从 AmiiboAPI 下载数据库...")
+            response = requests.get(AMIIBODB_API)
+            if response.status_code == 200:
+                data = response.json()
+                # 建立 ID -> Info 的映射
+                cache = {}
+                for item in data.get('amiibo', []):
+                    # 格式化 ID: head + tail
+                    head = item.get('head', '')
+                    tail = item.get('tail', '')
+                    amiibo_id = f"{head}-{tail}"
+                    cache[amiibo_id] = item
+                
+                self.amiibo_info_cache = cache
+                # 保存缓存到本地文件以便下次使用
+                with open(AMIIBO_BASE / 'master_db_cache.json', 'w', encoding='utf-8') as f:
+                    json.dump(cache, f, ensure_ascii=False)
+                
+                return {'success': True, 'count': len(cache)}
+            else:
+                return {'success': False, 'error': f"HTTP Error: {response.status_code}"}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def _load_master_cache(self):
+        """加载本地缓存的主数据库"""
+        cache_file = AMIIBO_BASE / 'master_db_cache.json'
+        if cache_file.exists():
+            try:
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    self.amiibo_info_cache = json.load(f)
+            except:
+                self.amiibo_info_cache = {}
+        else:
+             # 如果没有缓存，尝试下载
+             self.update_master_database()
+
+    def refresh_local_amiibos(self) -> Dict[str, Any]:
+        """刷新本地所有 Amiibo 的元数据"""
+        if not self.amiibo_info_cache:
+            self._load_master_cache()
+            
+        updated_count = 0
+        
+        # 遍历所有 data 目录下的 bin 文件
+        existing_files = list(AMIIBO_DATA.glob('*.bin'))
+        
+        for f in existing_files:
+            filename = f.name
+            
+            # 读取文件获取 ID
+            with open(f, 'rb') as file_obj:
+                data = file_obj.read()
+            
+            amiibo_id = self.get_amiibo_id(data)
+            
+            if not amiibo_id:
+                continue
+                
+            # 在数据库中查找
+            file_hash = self.get_file_hash(f)
+            
+            # 如果不在 DB 中，初始化它
+            if filename not in self.db['amiibos']:
+                self.db['amiibos'][filename] = {
+                    'filename': filename,
+                    'amiibo_id': amiibo_id,
+                    'hash': file_hash,
+                    'added_date': datetime.now().isoformat(),
+                    'size': len(data)
+                }
+            
+            # 尝试从 Master Cache 匹配元数据
+            # 注意: AmiiboAPI 的 ID format 是 hex string without dash usually, or separate head/tail
+            # Our get_amiibo_id returns XXXXXXXX-XXXXXXXX (Head-Tail)
+            # AmiiboAPI returns data with 'head' and 'tail' fields.
+            
+            # 尝试匹配
+            if self.amiibo_info_cache and amiibo_id in self.amiibo_info_cache:
+                info = self.amiibo_info_cache[amiibo_id]
+                self.db['amiibos'][filename].update({
+                    'character': info.get('character'),
+                    'game_series': info.get('gameSeries'),
+                    'series': info.get('amiiboSeries'),
+                    'image_url': info.get('image'),
+                    'type': info.get('type')
+                })
+                updated_count += 1
+        
+        self._save_database()
+        return {'success': True, 'updated': updated_count, 'total': len(existing_files)}
     
     def _load_database(self) -> Dict:
         """加载本地数据库"""
@@ -220,6 +318,10 @@ class AmiiboLibrary:
         Returns:
             Amiibo 列表
         """
+        # 确保有缓存
+        if not self.amiibo_info_cache:
+            self._load_master_cache()
+
         amiibos = []
         
         # 扫描 data 文件夹
@@ -228,18 +330,50 @@ class AmiiboLibrary:
                 'filename': f.name,
                 'size': f.stat().st_size,
                 'path': str(f),
-                'has_origin': (AMIIBO_ORIGIN / f.name).exists()
+                'has_origin': (AMIIBO_ORIGIN / f.name).exists(),
+                'modified': False
             }
             
-            if include_info and f.name in self.db['amiibos']:
-                db_info = self.db['amiibos'][f.name]
+            # 检查是否修改（简单哈希对比）
+            if info['has_origin']:
+                # 这里为了性能，通常只在请求详细信息时才做完整哈希对比
+                # 但可以通过文件修改时间初步判断
+                info['modified'] = f.stat().st_mtime > (AMIIBO_ORIGIN / f.name).stat().st_mtime
+
+            if include_info:
+                # 优先从数据库读取用户自定义信息
+                db_entry = self.db['amiibos'].get(f.name, {})
+                
+                # 如果数据库为空，尝试初始化基本信息
+                if not db_entry:
+                     with open(f, 'rb') as file_obj:
+                         amiibo_id = self.get_amiibo_id(file_obj.read())
+                     db_entry = {'amiibo_id': amiibo_id}
+                     self.db['amiibos'][f.name] = db_entry
+
+                amiibo_id = db_entry.get('amiibo_id')
+
+                # 如果有 ID 且有缓存，尝试补全缺失的元数据
+                if amiibo_id and self.amiibo_info_cache and amiibo_id in self.amiibo_info_cache:
+                    cached_info = self.amiibo_info_cache[amiibo_id]
+                    # 仅当本地没有数据时才使用缓存数据默认值
+                    series = db_entry.get('series') or cached_info.get('amiiboSeries')
+                    character = db_entry.get('character') or cached_info.get('character')
+                    game_series = db_entry.get('game_series') or cached_info.get('gameSeries')
+                    image_url = db_entry.get('image_url') or cached_info.get('image')
+                else:
+                    series = db_entry.get('series')
+                    character = db_entry.get('character')
+                    game_series = db_entry.get('game_series')
+                    image_url = db_entry.get('image_url')
+
                 info.update({
-                    'amiibo_id': db_info.get('amiibo_id'),
-                    'custom_name': db_info.get('custom_name'),
-                    'series': db_info.get('series'),
-                    'character': db_info.get('character'),
-                    'game_series': db_info.get('game_series'),
-                    'image_url': db_info.get('image_url')
+                    'amiibo_id': amiibo_id,
+                    'custom_name': db_entry.get('custom_name'),
+                    'series': series,
+                    'character': character,
+                    'game_series': game_series,
+                    'image_url': image_url
                 })
             
             amiibos.append(info)
