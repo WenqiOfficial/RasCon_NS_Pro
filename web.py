@@ -148,11 +148,19 @@ def api_amiibo_add():
         if file.filename == '':
             return jsonify({'success': False, 'error': '没有选择文件'})
         
-        if not file.filename.endswith('.bin'):
-            return jsonify({'success': False, 'error': '请上传 .bin 格式的 Amiibo 文件'})
-        
         # 保存到临时位置
-        temp_path = f'file/amiibo/temp_{file.filename}'
+        if not file.filename.lower().endswith('.bin'):
+             return jsonify({'success': False, 'error': '请上传 .bin 格式的 Amiibo 文件'})
+        
+        from amiibo_library import library
+        # 使用安全的临时路径
+        import uuid
+        temp_name = f'temp_{uuid.uuid4().hex}.bin'
+        temp_path = get_file_path(os.path.join('amiibo', temp_name))
+        
+        # 确保目录存在
+        os.makedirs(os.path.dirname(temp_path), exist_ok=True)
+        
         file.save(temp_path)
         
         # 添加到库

@@ -81,7 +81,7 @@ class CCLI():
                 line = line.strip()                             #去掉每行头尾空白
                 if not len(line) or line.startswith('#'):       #判断是否是空行或注释行
                     continue                                    #是的话，跳过不处理
-                result.append(line.lower())                     #保存小写文字
+                result.append(line)                             #保留原始大小写，不要使用lower()
             return result
     async def clean(self,file):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,8 +114,11 @@ class CCLI():
     async def pressButton(self,*commands):
          for command in commands:
              print(command)
-             cmd,*args=command.split()
-
+             # 防止带空格的文件名被截断
+             parts = command.split(' ', 1)
+             cmd = parts[0].lower()
+             args = parts[1].split() if len(parts) > 1 else []
+             
              if cmd in self.available_sticks: #摇杆
                  dir,sec,*sth=args[0].split(',')
                  await self.cmd_stick(cmd,dir,sec)
@@ -133,17 +136,19 @@ class CCLI():
                  else:
                      print(f'command waitrandom args need to be int {args[0]} {args[1]}' )
              elif cmd == 'print':
-                 print(args[0]) #输出
+                 print(parts[1] if len(parts) > 1 else "") #输出
              elif cmd == 'amiibo':
-                 if args[0] == 'remove':
+                 # 使用原始的后面的完整字符串来避免空格丢失或大小写改变
+                 fileName = parts[1].strip() if len(parts) > 1 else ""
+                 if fileName == 'remove':
                      self.controller_state.set_nfc(None)
                      self.update_status(amiibo=None, message='Amiibo 已移除')
                      print('amiibo已移除')
-                 elif args[0] != 'clean':
-                     await self.set_amiibo(args[0]) #设置amiibo
+                 elif fileName != 'clean' and fileName:
+                     await self.set_amiibo(fileName) #设置amiibo
              elif cmd == 'press':  # 按下按键（长按开始）
                  if args:
-                     btn = args[0]
+                     btn = args[0].lower()
                      if btn in self.available_buttons:
                          await button_press(self.controller_state, btn)
                          print(f'press {btn}')
