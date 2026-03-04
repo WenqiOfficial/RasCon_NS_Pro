@@ -257,7 +257,7 @@ class AmiiboLibrary:
             
             # 完整 8 字节 ID
             id_bytes = data[84:92]
-            amiibo_id = id_bytes.hex().upper()
+            amiibo_id = id_bytes.hex().lower() # API 中是小写，这里改为小写以便匹配
             # 格式化为 XXXXXXXX-XXXXXXXX
             return f"{amiibo_id[:8]}-{amiibo_id[8:16]}"
         except Exception:

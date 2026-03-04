@@ -1887,13 +1887,19 @@
         // 移除当前 Amiibo
         async function removeCurrentAmiibo() {
             try {
-                await fetch('/api/btn', {
+                const response = await fetch('/api/btn', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'push', button: 'amiibo remove' })
                 });
-                updateCurrentAmiibo(null);
-                showToast('已移除 Amiibo', 'success');
+                const data = await response.json();
+                // 只有当请求成功才更新UI
+                if(data.success !== false) {
+                   updateCurrentAmiibo(null);
+                   showToast('已移除 Amiibo', 'success');
+                } else {
+                   showToast('移除失败: ' + data.error, 'error');
+                }
             } catch (error) {
                 showToast('移除失败', 'error');
             }

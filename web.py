@@ -59,7 +59,7 @@ def api_btn():
             # 释放按键（长按结束）
             write('command.txt', f'release {button}')
         else:
-            # 普通按键（按下后释放）
+            # 普通按键（例如 amiibo remove 等命令也会走到这里）
             write('command.txt', button)
         
         return jsonify({'success': True, 'action': action, 'button': button})
@@ -183,6 +183,7 @@ def api_amiibo_delete():
         
         data = request.get_json()
         filename = data.get('filename', '')
+        # 如果是前端传来的全名，需要确保处理逻辑可以匹配
         remove_origin = data.get('remove_origin', False)
         
         if not filename:
