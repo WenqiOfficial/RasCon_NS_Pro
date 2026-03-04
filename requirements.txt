@@ -13,6 +13,9 @@ crc8
 # HID 设备支持
 hid
 
+# HTTP 请求 (AmiiboDB)
+requests>=2.25.0
+
 # 以下依赖仅在 Linux 系统上需要:
 # dbus-python  # 蓝牙 D-Bus 接口
 # 安装方式: sudo apt install python3-dbus

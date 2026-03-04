@@ -45,9 +45,12 @@ async def _main(args):
             await transport.close()
 
 if __name__ == '__main__':
-    # check if root
-    if not os.geteuid() == 0:
-        raise PermissionError('Script must be run as root!')
+    # check if root (only on Linux/Unix)
+    if os.name != 'nt':
+        if not os.geteuid() == 0:
+            raise PermissionError('Script must be run as root!')
+    else:
+        print("Warning: As you are running on Windows, Bluetooth functionality will likely fail.")
 
     # setup logging
     log.configure()
