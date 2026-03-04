@@ -158,17 +158,38 @@ class CCLI():
                  print('command',cmd,'not found')
 
 
+    def is_connected(self):
+        """检查是否已连接到 Switch"""
+        try:
+            protocol = self.controller_state._protocol
+            return protocol is not None and protocol.transport is not None
+        except AttributeError:
+            return False
+
     async def set_amiibo(self, fileName):
         """
         Sets nfc content of the controller state to contents of the given file.
         :param fileName: amiibo文件名(文件固定放在项目文件夹的file/amiibo里)
         """
         try:
+            # 检查连接状态
+            if not self.is_connected():
+                self.update_status(message='未连接到 Switch，无法使用 Amiibo')
+                print('amiibo设置失败: 未连接到 Switch')
+                return
+            
             path = 'file/amiibo/' + fileName
             tag = NFCTag.load_amiibo(path)
             self.controller_state.set_nfc(tag)
             self.update_status(amiibo=fileName, message=f'已加载 Amiibo: {fileName}')
             print('amiibo设置成功')
+        except OSError as e:
+            if 'transport endpoint' in str(e).lower() or 'not connected' in str(e).lower():
+                self.update_status(connected=False, message='连接已断开，请重新连接')
+                print(f'amiibo设置失败: 连接已断开')
+            else:
+                self.update_status(message=f'Amiibo 加载失败: {e}')
+                print(f'amiibo设置失败: {e}')
         except Exception as e:
             self.update_status(message=f'Amiibo 加载失败: {e}')
             print(f'amiibo设置失败: {e}')

@@ -92,8 +92,8 @@
         /* 主布局 - 桌面：控制器左侧(宽)，侧边栏右侧(窄) */
         .main-content {
             display: grid;
-            grid-template-columns: 1fr 380px;
-            gap: 16px;
+            grid-template-columns: 1fr 360px;
+            gap: 20px;
             height: calc(100vh - 130px);
             min-height: 500px;
         }
@@ -111,6 +111,7 @@
             gap: 12px;
             height: 100%;
             min-height: 0;
+            overflow: hidden;
         }
 
         /* 响应式 - 竖屏/移动端：控制器 -> Amiibo -> 脚本 */
@@ -121,7 +122,7 @@
             }
             .left-section {
                 height: auto;
-                min-height: 400px;
+                min-height: auto;
             }
             .right-section {
                 height: auto;
@@ -130,22 +131,22 @@
                 min-height: 350px;
             }
             .sidebar-panel-script {
-                order: 10; /* 竖屏时脚本放最后 */
+                order: 10;
+            }
+            .controller-grid {
+                width: 100%;
+                max-width: 500px;
             }
         }
         
-        /* 控制器容器 */
+        /* 控制器容器 - 响应式 */
         .controller-grid-container {
             display: flex;
             align-items: center;
             justify-content: center;
             flex: 1;
-            min-height: 350px;
-            padding: 10px;
-        }
-
-        .controller-grid {
-            margin: 0 auto;
+            padding: 20px;
+            overflow: auto;
         }
 
         /* 控制器面板 */
@@ -153,6 +154,7 @@
             display: flex;
             flex-direction: column;
             height: 100%;
+            flex: 1;
         }
 
         /* 全屏模式 */
@@ -307,26 +309,28 @@
             color: white;
         }
         
-        /* 控制器网格 */
+        /* 控制器网格 - 响应式 */
         .controller-grid {
             display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            padding: 16px;
+            grid-template-columns: repeat(7, minmax(40px, 70px));
+            gap: 8px;
+            padding: 20px;
             background: var(--bg-tertiary);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 12px;
+            width: fit-content;
         }
         
         .controller-grid button {
             width: 100%;
-            height: 44px;
+            min-width: 40px;
+            height: 48px;
             border: 1px solid var(--border-accent);
             border-radius: 8px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.15s ease;
-            font-size: 12px;
+            font-size: 13px;
             background: var(--bg-card);
             color: var(--text-primary);
         }
@@ -650,32 +654,38 @@
             opacity: 0.7;
         }
         
-        /* Amiibo 标签页 */
+        /* Amiibo 标签页 - 现代风格 */
         .amiibo-tabs {
             display: flex;
-            gap: 4px;
+            gap: 2px;
             margin-bottom: 12px;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: 8px;
         }
         
         .amiibo-tabs button {
             flex: 1;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px 6px 0 0;
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted);
             cursor: pointer;
             font-size: 12px;
             font-weight: 500;
-            transition: all 0.2s;
-            border-bottom: none;
+            transition: all 0.2s ease;
+        }
+        
+        .amiibo-tabs button:hover {
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.03);
         }
         
         .amiibo-tabs button.active {
             background: var(--bg-card);
             color: var(--accent-primary);
-            border-color: var(--accent-primary);
-            border-bottom: 1px solid var(--bg-card);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         }
         
         /* Amiibo 搜索栏 */
