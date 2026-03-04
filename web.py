@@ -414,6 +414,9 @@ def run():
         write('script.txt',script)
         write('scriptcopy.txt',script)
         write('command.txt','run')
+        
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True})
 
     msg,script=default()
     return render_template('index.html',msg = msg,script =script)
@@ -422,6 +425,9 @@ def run():
 def stop():
     if request.method == 'POST':
         write('command.txt','stop')
+        
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({'success': True})
 
     msg,script=default()
     return render_template('index.html',msg = msg,script =script)

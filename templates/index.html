@@ -92,22 +92,71 @@
         /* 主布局 */
         .main-content {
             display: grid;
-            grid-template-columns: 420px 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr 360px; /* Controller gets more space */
+            gap: 16px;
+            height: calc(100vh - 90px);
+            overflow: hidden;
         }
         
         .left-section {
             display: flex;
             flex-direction: column;
             gap: 16px;
+            overflow: hidden; /* For controller centering */
+            height: 100%;
         }
 
         .right-section {
             display: flex;
             flex-direction: column;
-            gap: 20px;
-            height: calc(100vh - 120px);
+            gap: 12px;
+            height: 100%;
+            overflow: hidden;
+            min-width: 0;
         }
+
+        /* 响应式调整 */
+        @media (max-width: 960px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: visible;
+            }
+            .right-section {
+                height: auto;
+                overflow: visible;
+            }
+        }
+        
+        .controller-grid-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            overflow: auto;
+        }
+
+        .controller-grid {
+             margin: 0 auto;
+             /* Scale transform here if needed for responsiveness */
+        }
+
+        /* Fullscreen Controller */
+        .fullscreen-active .left-section {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            width: 100vw; height: 100vh;
+            z-index: 9999;
+            background: var(--bg-primary);
+            padding: 20px;
+        }
+        
+        .fullscreen-active .left-section .panel {
+            height: 100%;
+            border: none;
+        }
+
         
         /* 面板通用样式 */
         .panel {
@@ -1004,12 +1053,19 @@
         </header>
         
         <div class="main-content">
-            <!-- 左侧：控制器 + 脚本 -->
-            <div class="left-section">
+            <!-- 左侧：控制器 -->
+            <div class="left-section controller-section">
                 
                 <!-- 控制器 -->
-                <div class="panel">
-                    <h3>Pro Controller <span class="key-hint">(WASD=左摇杆 方向键=右摇杆 空格=A 回车=B)</span></h3>
+                <div class="panel" style="display:flex; flex-direction:column; height:100%; justify-content:center;">
+                    <div class="panel-header">
+                        <h3>Pro Controller <span class="key-hint">(WASD=左摇杆 方向键=右摇杆 空格=A 回车=B)</span></h3>
+                        <div class="window-controls">
+                            <!-- Fullscreen Toggle -->
+                            <button onclick="toggleFullscreen()" class="btn btn-sm" title="全屏模式">⛶</button>
+                        </div>
+                    </div>
+                    <div class="controller-grid-container">
                     <div class="controller-grid">
                         <!-- 行1: 肩键 -->
                         <button data-btn="zl" class="btn-shoulder">ZL</button>
@@ -1072,64 +1128,65 @@
                     </div>
                 </div>
                 
-                <!-- Amiibo 库 (简化版资源列表) -->
-                <div class="panel">
-                    <div class="panel-header" style="justify-content: space-between; border-bottom: none; padding-bottom: 0;">
-                        <h3>📦 Amiibo 库</h3>
-                        <div class="amiibo-simple-actions" style="display:flex; gap:8px;">
-                            <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent" style="padding:4px 10px; font-size:11px;">+ 上传</button>
-                            <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
-                            <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn" style="padding:4px 10px; font-size:11px;" title="切换分组视图">📂 分组</button>
-                            <button onclick="openSubscriptionModal()" class="btn" style="padding:4px 10px; font-size:11px;" title="从 GitHub 仓库下载">🌐 订阅</button>
-                            <button onclick="updateAmiiboDatabase()" class="btn" style="padding:4px 10px; font-size:11px;" title="更新 Amiibo 数据库 (AmiiboAPI)">☁️ 更新</button>
-                            <button onclick="refreshAmiiboList()" class="btn" style="padding:4px 10px; font-size:11px;" title="刷新列表">🔄</button>
-                        </div>
-                    </div>
-                    
-                    <div class="amiibo-search" style="margin-bottom:10px;">
-                        <input type="text" id="amiibo-search-input" placeholder="搜索名称、系列..." onkeyup="searchAmiibo(this.value)" 
-                               style="width:100%; padding:8px 12px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); font-size:13px;">
-                    </div>
-
-                    <div id="amiibo-list" class="amiibo-simple-list" style="height: 380px; overflow-y: auto; display:flex; flex-direction:column; gap:6px; padding-right: 4px;">
-                        <div class="empty-state">正在加载...</div>
-                    </div>
-                    
-                    <div id="current-amiibo-status" class="current-amiibo-status hide" style="margin-top:10px; display:flex; justify-content:space-between; align-items:center; background:rgba(0,212,170,0.1); padding:8px; border-radius:6px; font-size:12px;">
-                        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:8px;">
-                            <span class="label" style="color:var(--accent-primary);">当前:</span>
-                            <span id="current-amiibo-name" style="font-weight:bold; color:var(--text-primary);"></span>
-                        </div>
-                        <button onclick="removeCurrentAmiibo()" class="btn btn-danger" style="padding:2px 8px; font-size:10px;">移除</button>
-                    </div>
-                </div>
             </div>
             
-            <!-- 右侧：脚本控制台 -->
-            <div class="right-section panel">
-                <h3>📜 脚本控制台</h3>
-                <div class="script-container">
-                    <form action="/script/run" method="POST" id="script-form" style="display:contents">
-                        <textarea name="script" id="script-area" spellcheck="false" placeholder="# 脚本示例:
-# 按下A键
-a
-# 等待1秒
-wait 1000
-# 左摇杆向左推到底
-ls left,100
-# 等待2秒
-wait 2000
-# 摇杆回中
-ls reset">{{script}}</textarea>
-                    </form>
-                    
-                    <div class="script-buttons" style="display:flex; gap:10px; margin-top:10px;">
-                        <button type="submit" form="script-form" class="btn btn-accent" style="flex:2; padding:12px; font-size:14px;">▶ 运行脚本</button>
-                        <form action="/script/stop" method="POST" style="display:contents">
-                            <button type="submit" class="btn btn-danger" style="flex:1;">⏹ 停止</button>
-                        </form>
-                        <button type="button" class="btn" style="flex:0 0 auto;" onclick="document.getElementById('script-area').value=''">清空</button>
+            <!-- Right Section: Sidebar (Amiibo & Script) -->
+            <div class="right-section sidebar-section">
+                <!-- Amiibo Panel (Tabbed) -->
+                <div class="panel sidebar-panel-amiibo">
+                    <div class="amiibo-tabs">
+                        <button class="active" id="tab-library" onclick="switchAmiiboTab('library')">📦 本地库</button>
+                        <button id="tab-subscription" onclick="switchAmiiboTab('subscription')">🌐 在线订阅</button>
                     </div>
+                    
+                    <!-- View: Library -->
+                    <div id="amiibo-library-view" style="display:flex; flex-direction:column; flex:1; min-height:0;">
+                        <div class="amiibo-simple-actions" style="display:flex; gap:8px; margin-bottom:8px;">
+                            <input type="text" id="amiibo-search-input" placeholder="🔍 搜索..." onkeyup="searchAmiibo(this.value)" style="flex:1; padding:6px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary);">
+                             <button onclick="refreshAmiiboList()" class="btn btn-sm" title="刷新">🔄</button>
+                        </div>
+                        <div class="amiibo-simple-actions" style="display:flex; gap:6px; margin-bottom:8px; flex-wrap:wrap;">
+                            <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent btn-sm">➕ 上传</button>
+                            <input type="file" id="amiibo-file" accept=".bin" multiple style="display:none" onchange="uploadAmiibo()">
+                            <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn btn-sm">📁 分组</button>
+                            <button onclick="updateAmiiboDatabase()" class="btn btn-sm">☁️ 更新DB</button>
+                        </div>
+                        <div id="amiibo-list" class="amiibo-simple-list" style="flex:1; overflow-y:auto;">
+                             <div class="empty-state">正在加载...</div>
+                        </div>
+                         <div id="current-amiibo-status" class="current-amiibo-status hide" style="margin-top:8px; padding:6px;">
+                            <span class="label">使用中:</span>
+                            <span id="current-amiibo-name" style="font-weight:bold; margin-left:4px;"></span>
+                            <button onclick="removeCurrentAmiibo()" class="btn btn-danger btn-sm" style="margin-left:auto;">移除</button>
+                        </div>
+                    </div>
+                    
+                    <!-- View: Subscription -->
+                    <div id="amiibo-subscription-view" style="display:none; flex-direction:column; flex:1; min-height:0;">
+                         <div style="display:flex; gap:6px; margin-bottom:8px;">
+                             <input type="text" id="repo-url-input" placeholder="GitHub: User/Repo" style="flex:1; padding:6px; border-radius:4px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary); font-size:12px;">
+                             <button onclick="fetchRepoTree()" class="btn btn-accent btn-sm">获取</button>
+                         </div>
+                         <div id="repo-content" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-tertiary); padding:8px;">
+                            <div class="empty-state" style="padding:20px; text-align:center; font-size:12px;">输入 GitHub 仓库地址<br><span style="font-size:10px; color:var(--text-muted)">例如: Falco/amiibo</span></div>
+                         </div>
+                    </div>
+                </div>
+                
+                <!-- Script Panel -->
+                <div class="panel sidebar-panel-script">
+                    <div class="panel-header" style="height:30px; min-height:30px; padding-bottom:0; margin-bottom:6px; border:none; justify-content: start; gap: 10px;">
+                        <h3 style="font-size:12px;">📜 脚本</h3>
+                        <div style="font-size:10px; color:var(--text-muted);">支持宏命令</div>
+                    </div>
+                    <form action="/script/run" method="POST" id="script-form" style="display:flex; flex-direction:column; height: 100%; gap:6px;">
+                        <textarea name="script" id="script-area" spellcheck="false" placeholder="# 脚本区域..." style="flex:1; padding:8px; resize:none; font-family:'Consolas',monospace; font-size:12px; background:var(--bg-tertiary); border:1px solid var(--border-color); color:var(--text-primary); border-radius:4px;">{{script}}</textarea>
+                        <div style="display:flex; gap:6px;">
+                            <button type="button" onclick="runScript()" class="btn btn-accent btn-sm" style="flex:1;">▶ 运行</button>
+                            <button type="button" onclick="stopScript()" class="btn btn-danger btn-sm">⏹ 停止</button>
+                            <button type="button" onclick="document.getElementById('script-area').value=''" class="btn btn-sm">🗑</button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -1142,39 +1199,66 @@ ls reset">{{script}}</textarea>
     <!-- Toast 消息 -->
     <div class="toast" id="toast"></div>
 
-    <!-- Subscription Modal -->
-    <div id="subscription-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center;">
-        <div style="background:var(--bg-secondary); width:600px; max-width:90%; height:80vh; border-radius:12px; border:1px solid var(--border-color); display:flex; flex-direction:column; padding:20px; box-shadow:0 10px 40px rgba(0,0,0,0.5);">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-                <h3 style="margin:0; font-size:18px;">🌐 GitHub 订阅库</h3>
-                <button onclick="closeSubscriptionModal()" class="btn" style="border:none; font-size:18px; background:transparent; cursor:pointer; color:var(--text-secondary);">✕</button>
-            </div>
-            
-            <div style="display:flex; gap:10px; margin-bottom:16px;">
-                <input type="text" id="repo-url-input" placeholder="输入 GitHub 仓库 (例如: User/Repo)" style="flex:1; padding:10px; border-radius:6px; border:1px solid var(--border-color); background:var(--bg-tertiary); color:var(--text-primary);">
-                <button onclick="fetchRepoTree()" class="btn btn-accent">获取列表</button>
-            </div>
-
-            <div id="repo-content" style="flex:1; overflow-y:auto; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); padding:10px; display:flex; flex-direction:column; gap:4px;">
-                <div class="empty-state" style="padding:40px; text-align:center; color:var(--text-muted);">请输入仓库地址并点击获取</div>
-            </div>
-        </div>
-    </div>
-
     <script>
-        // ==================== Subscription Logic ====================
-        function openSubscriptionModal() {
-            const modal = document.getElementById('subscription-modal');
-            modal.style.display = 'flex';
-            
-            // 尝试从 localStorage 加载上次的 Repo
-            const lastRepo = localStorage.getItem('last_amiibo_repo');
-            if (lastRepo) document.getElementById('repo-url-input').value = lastRepo;
+        // ==================== UI / Layout Logic ====================
+        function toggleFullscreen() {
+            document.body.classList.toggle('fullscreen-active');
         }
 
-        function closeSubscriptionModal() {
-            document.getElementById('subscription-modal').style.display = 'none';
+        function switchAmiiboTab(tab) {
+            // Update Tab Buttons
+            document.querySelectorAll('.amiibo-tabs button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            
+            // Update Views
+            document.getElementById('amiibo-library-view').style.display = 'none';
+            document.getElementById('amiibo-subscription-view').style.display = 'none';
+            
+            if (tab === 'library') {
+                document.getElementById('amiibo-library-view').style.display = 'flex';
+            } else {
+                document.getElementById('amiibo-subscription-view').style.display = 'flex';
+                // Auto-load last repo if field is empty
+                const lastRepo = localStorage.getItem('last_amiibo_repo');
+                const input = document.getElementById('repo-url-input');
+                if (lastRepo && !input.value) {
+                    input.value = lastRepo;
+                }
+            }
         }
+
+        // ==================== Script Logic ====================
+        async function runScript() {
+            const script = document.getElementById('script-area').value;
+            if(!script.trim()) return;
+            
+            try {
+                const res = await fetch('/script/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: 'script=' + encodeURIComponent(script)
+                });
+                const data = await res.json();
+                if(data.success) showToast('脚本开始运行', 'success');
+                else showToast('运行失败: ' + data.error, 'error');
+            } catch(e) { showToast('请求失败', 'error'); }
+        }
+
+        async function stopScript() {
+            try {
+                await fetch('/script/stop', { 
+                    method: 'POST',
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                });
+                showToast('脚本已停止', 'info');
+            } catch(e) {}
+        }
+
+        // ==================== Subscription Logic ====================
+
 
         async function fetchRepoTree() {
             const repoInput = document.getElementById('repo-url-input');
@@ -1244,7 +1328,7 @@ ls reset">{{script}}</textarea>
                 const data = await res.json();
                 if(data.success) {
                     showToast('下载成功！已添加到库', 'success');
-                    closeSubscriptionModal(); // Optional: keep open to download more? Maybe keep open.
+                    // closeSubscriptionModal(); // Keeping it open is better
                     refreshAmiiboList(); // 刷新背景的主列表
                 } else {
                     showToast(`下载失败: ${data.error}`, 'error');
