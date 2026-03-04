@@ -1,27 +1,38 @@
 import os
 import zipfile
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def get_file_path(filename):
+    return os.path.join(BASE_DIR, 'file', filename)
+
+def get_amiibo_path(filename=None):
+    if filename:
+        return os.path.join(BASE_DIR, 'file', 'amiibo', filename)
+    else:
+        return os.path.join(BASE_DIR, 'file', 'amiibo')
 
 def unzip(zipFile):
 
     print('开始解压'+zipFile)
 
-    path = 'file/amiibo/'
-    zFile = zipfile.ZipFile(path + os.sep + zipFile, "r")
-    for file in zFile.namelist():
+    amiibo_dir = get_amiibo_path()
+    zip_path = get_amiibo_path(zipFile)
+    
+    with zipfile.ZipFile(zip_path, "r") as zFile:
+        for file in zFile.namelist():
 
-        if file.rsplit('.', 1)[1].lower() in {'bin','BIN'}:
-            zFile.extract(file,path)
+            if '.' in file and file.rsplit('.', 1)[1].lower() in {'bin','BIN'}:
+                zFile.extract(file, amiibo_dir)
 
-            #文件名 空格改为_，并且改为小写
-            oldName = path + os.sep + file   # os.sep添加系统分隔符
-            newName = path + os.sep + file.replace(' ','_').lower()
-            #print(file.lower())
-            os.rename(oldName,newName)
+                #文件名 空格改为_，并且改为小写
+                oldName = os.path.join(amiibo_dir, file)
+                newName = os.path.join(amiibo_dir, file.replace(' ','_').lower())
+                if oldName != newName:
+                    os.rename(oldName,newName)
 
-    zFile.close()
-
-    os.remove(path+ os.sep + zipFile) # 删除压缩包
+    if os.path.exists(zip_path):
+        os.remove(zip_path) # 删除压缩包
 
     print('解压完毕，'+zipFile+'已删除')
 
@@ -33,7 +44,7 @@ def save(cmd):
         msg += _
 
 
-    path = 'file/scriptcopy.txt'
+    path = get_file_path('scriptcopy.txt')
     with open(path,'w') as f:
         f.write(msg)
 
@@ -45,7 +56,7 @@ def readAmiibo():
 
  #   print('开始读取全部的amiibo')
 
-    path = 'file/amiibo/'
+    path = get_amiibo_path()
 
     fileList=os.listdir(path)
 

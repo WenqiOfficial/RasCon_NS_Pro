@@ -66,11 +66,15 @@ class CCLI():
             print(f'状态更新失败: {e}')
 
     async def write(self,msg):
-        with open('file/message.txt','a') as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, 'file', 'message.txt')
+        with open(file_path,'a') as f:
             f.write(msg+'\n')
 
     async def get(self,file):
-        with open('file/'+file,'r') as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, 'file', file)
+        with open(file_path,'r') as f:
             result = list()
             for line in f.readlines():                          #依次读取每行
                 line = line.strip()                             #去掉每行头尾空白
@@ -79,7 +83,9 @@ class CCLI():
                 result.append(line.lower())                     #保存小写文字
             return result
     async def clean(self,file):
-        with open('file/'+file,'w+') as f:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(base_dir, 'file', file)
+        with open(file_path,'w+') as f:
             return f.truncate() 
 
 
@@ -165,17 +171,27 @@ class CCLI():
         """
         import os
         try:
-            # 优先使用 data 目录（amiibo_library 使用的新路径）
-            path = 'file/amiibo/data/' + fileName
-            if not os.path.exists(path):
-                # 回退到旧路径
-                path = 'file/amiibo/' + fileName
+            # 获取当前脚本所在目录的绝对路径
+            base_dir = os.path.dirname(os.path.abspath(__file__))
             
-            if not os.path.exists(path):
+            # 按优先级查找 Amiibo 文件（使用绝对路径）
+            search_paths = [
+                os.path.join(base_dir, 'file', 'amiibo', 'data', fileName),  # amiibo_library path
+                os.path.join(base_dir, 'file', 'amiibo', fileName),          # legacy path
+            ]
+            
+            path = None
+            for p in search_paths:
+                if os.path.exists(p):
+                    path = p
+                    break
+            
+            if path is None:
                 self.update_status(message=f'Amiibo 文件不存在: {fileName}')
-                print(f'amiibo设置失败: 文件不存在 {path}')
+                print(f'amiibo设置失败: 文件不存在')
                 return
-                
+            
+            # 使用 NFCTag 加载 Amiibo (根据 patch.txt)
             tag = NFCTag.load_amiibo(path)
             self.controller_state.set_nfc(tag)
             self.update_status(amiibo=fileName, message=f'已加载 Amiibo: {fileName}')
@@ -267,11 +283,14 @@ class CCLI():
         :param direction: 'up', 'down', 'left', 'right'
         """
         try:
+            stick = None
             if side == 'ls':
                 stick = self.controller_state.l_stick_state
             elif side == 'rs':
                 stick = self.controller_state.r_stick_state
-            else:
+            
+            if stick is None:
+                print(f'摇杆长按失败: {side} 不存在')
                 return
             
             self.set_stick(stick, direction)
@@ -286,11 +305,14 @@ class CCLI():
         :param side: 'ls' 左摇杆, 'rs' 右摇杆
         """
         try:
+            stick = None
             if side == 'ls':
                 stick = self.controller_state.l_stick_state
             elif side == 'rs':
                 stick = self.controller_state.r_stick_state
-            else:
+            
+            if stick is None:
+                print(f'摇杆释放失败: {side} 不存在')
                 return
             
             stick.set_center()

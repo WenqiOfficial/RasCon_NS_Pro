@@ -19,16 +19,24 @@ def default():
     script = read('scriptcopy.txt')
     return msg, script
 
+def get_file_path(filename):
+    import os
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_dir, 'file', filename)
+
 def read(file):
-    with open('file/' + file, 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        with open(get_file_path(file), 'r', encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return ""
 
 def write(file, msg):
-    with open('file/' + file, 'w', encoding='utf-8') as f:
+    with open(get_file_path(file), 'w', encoding='utf-8') as f:
         f.write(msg)
 
 def clean(file):
-    with open('file/' + file, 'w+', encoding='utf-8') as f:
+    with open(get_file_path(file), 'w+', encoding='utf-8') as f:
         f.truncate()
 
 # ==================== API 端点 ====================
@@ -394,8 +402,9 @@ def btn():
         btn = request.form['btn']
         write('command.txt',btn)
         if btn == 'amiibo clean':
-            path = 'file/amiibo/'
-            shutil.rmtree(path)
+            path = get_file_path('amiibo')
+            if os.path.exists(path):
+                shutil.rmtree(path)
             os.mkdir(path)
             msg,script=default()
             return render_template('index.html',msg =msg,script =script,amiibo='cleaned!')
@@ -439,7 +448,7 @@ def upload():
     filename = file.filename
     if filename.rsplit('.', 1)[1].lower() in {'bin','BIN'}:
         filename = filename.replace(' ','_').lower()
-        file.save('file/amiibo/'+filename)
+        file.save(get_file_path(os.path.join('amiibo', filename)))
         write('command.txt','amiibo '+filename)
         msg,script=default()
         return render_template('index.html',msg = msg,script =script,amiibo='OK!')
@@ -459,13 +468,14 @@ def amiibosUpload():
     if filename.rsplit('.',1)[1].lower() == 'zip':
 
         #清除残余amiibo数据
-        path = 'file/amiibo/'
-        shutil.rmtree(path)
+        path = get_file_path('amiibo')
+        if os.path.exists(path):
+            shutil.rmtree(path)
         os.mkdir(path)
 
         #保存zip压缩包
         filename = filename.replace(' ','_').lower()
-        file.save(path+filename)
+        file.save(os.path.join(path, filename))
 
         #解压并生成脚本
         amiibos.run(filename)

@@ -20,7 +20,9 @@ from typing import Optional, Dict, List, Any
 from datetime import datetime
 
 # Amiibo 文件夹路径
-AMIIBO_BASE = Path('file/amiibo')
+# 使用绝对路径以避免不同 CWD 导致的问题
+BASE_DIR = Path(__file__).parent.absolute()
+AMIIBO_BASE = BASE_DIR / 'file' / 'amiibo'
 AMIIBO_ORIGIN = AMIIBO_BASE / 'origin'    # 原始备份（只读）
 AMIIBO_DATA = AMIIBO_BASE / 'data'        # 可编辑数据（用于扫描）
 AMIIBO_DB = AMIIBO_BASE / 'database.json' # 本地数据库
