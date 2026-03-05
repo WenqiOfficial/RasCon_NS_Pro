@@ -347,6 +347,57 @@ def api_amiibo_refresh_metadata():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/amiibo/versions/<filename>', methods=['GET'])
+def api_amiibo_versions(filename):
+    """AJAX API: 获取 Amiibo 的版本历史"""
+    try:
+        from amiibo_library import library
+        
+        if not filename:
+            return jsonify({'success': False, 'error': '缺少文件名'})
+        
+        versions = library.get_versions(filename)
+        return jsonify({'success': True, 'filename': filename, 'versions': versions})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/restore_version', methods=['POST'])
+def api_amiibo_restore_version():
+    """AJAX API: 恢复到指定版本"""
+    try:
+        from amiibo_library import library
+        
+        data = request.get_json()
+        filename = data.get('filename', '')
+        version_type = data.get('version_type', '')
+        bak_file = data.get('bak_file', '')
+        
+        if not filename or not version_type:
+            return jsonify({'success': False, 'error': '缺少参数'})
+        
+        result = library.restore_version(filename, version_type, bak_file)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/amiibo/delete_version', methods=['POST'])
+def api_amiibo_delete_version():
+    """AJAX API: 删除指定备份版本"""
+    try:
+        from amiibo_library import library
+        
+        data = request.get_json()
+        filename = data.get('filename', '')
+        bak_file = data.get('bak_file', '')
+        
+        if not filename or not bak_file:
+            return jsonify({'success': False, 'error': '缺少参数'})
+        
+        result = library.delete_version(filename, bak_file)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/amiibo/update', methods=['POST'])
 def api_amiibo_update():
     """AJAX API: 更新 Amiibo 信息"""

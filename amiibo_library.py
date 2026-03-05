@@ -474,13 +474,142 @@ class AmiiboLibrary:
             'filename': filename,
             'size': data_path.stat().st_size,
             'path': str(data_path),
-            'has_origin': (AMIIBO_ORIGIN / filename).exists()
+            'has_origin': (AMIIBO_ORIGIN / filename).exists(),
+            'modified': False
         }
+        
+        # 检查修改状态
+        if info['has_origin']:
+            info['modified'] = data_path.stat().st_mtime > (AMIIBO_ORIGIN / filename).stat().st_mtime
         
         if filename in self.db['amiibos']:
             info.update(self.db['amiibos'][filename])
         
+        # 附加版本信息
+        versions = self.get_versions(filename)
+        info['versions'] = versions
+        info['version_count'] = len(versions)
+        
         return info
+    
+    def get_versions(self, filename: str) -> List[Dict[str, Any]]:
+        """
+        获取 Amiibo 的所有版本（.bak 文件）
+        
+        joycontrol 在 Switch 写入 Amiibo 时会自动生成 .bak{N} 文件，
+        这些文件保存了写入前的数据状态。
+        
+        版本列表:
+        - origin: 最初上传的原始文件 (如果存在)
+        - .bak{N}: joycontrol 自动生成的备份
+        - current: 当前 data/ 里的工作文件
+        
+        Args:
+            filename: Amiibo 文件名 (如 'Mario.bin')
+        
+        Returns:
+            版本列表，按时间排序（最旧在前）
+        """
+        versions = []
+        data_path = AMIIBO_DATA / filename
+        origin_path = AMIIBO_ORIGIN / filename
+        
+        # 1. 原始版本 (origin)
+        if origin_path.exists():
+            stat = origin_path.stat()
+            versions.append({
+                'type': 'origin',
+                'label': '原始版本',
+                'path': str(origin_path),
+                'size': stat.st_size,
+                'mtime': stat.st_mtime,
+                'mtime_str': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
+                'bak_number': -1  # 排序用
+            })
+        
+        # 2. 扫描 .bak{N} 文件
+        # joycontrol 的 get_backuppath() 生成 "{source}.bak{N}"
+        # source 是 data/ 下的完整路径，所以 .bak 文件也在 data/ 目录下
+        if data_path.exists():
+            import re
+            bak_pattern = re.compile(r'^' + re.escape(filename) + r'\.bak(\d+)$')
+            
+            for f in AMIIBO_DATA.iterdir():
+                match = bak_pattern.match(f.name)
+                if match:
+                    bak_num = int(match.group(1))
+                    stat = f.stat()
+                    versions.append({
+                        'type': 'backup',
+                        'label': f'备份 #{bak_num}',
+                        'path': str(f),
+                        'bak_file': f.name,
+                        'size': stat.st_size,
+                        'mtime': stat.st_mtime,
+                        'mtime_str': datetime.fromtimestamp(stat.st_mtime).strftime('%Y-%m-%d %H:%M'),
+                        'bak_number': bak_num
+                    })
+        
+        # 按修改时间排序（最旧在前）
+        versions.sort(key=lambda v: (v['mtime'], v['bak_number']))
+        
+        return versions
+    
+    def restore_version(self, filename: str, version_type: str, bak_file: Optional[str] = None) -> Dict[str, Any]:
+        """
+        恢复到指定版本
+        
+        Args:
+            filename: Amiibo 文件名
+            version_type: 'origin' 或 'backup'
+            bak_file: 当 version_type='backup' 时，指定 .bak 文件名
+        
+        Returns:
+            恢复结果
+        """
+        data_path = AMIIBO_DATA / filename
+        
+        if version_type == 'origin':
+            source_path = AMIIBO_ORIGIN / filename
+            if not source_path.exists():
+                return {'success': False, 'error': '原始备份不存在'}
+        elif version_type == 'backup' and bak_file:
+            source_path = AMIIBO_DATA / bak_file
+            if not source_path.exists():
+                return {'success': False, 'error': f'备份文件 {bak_file} 不存在'}
+        else:
+            return {'success': False, 'error': '无效的版本参数'}
+        
+        # 复制恢复
+        shutil.copy2(source_path, data_path)
+        
+        return {
+            'success': True,
+            'message': f'{filename} 已恢复到 {version_type}',
+            'source': str(source_path)
+        }
+    
+    def delete_version(self, filename: str, bak_file: str) -> Dict[str, Any]:
+        """
+        删除指定的 .bak 版本文件
+        
+        Args:
+            filename: Amiibo 文件名 (用于验证归属)
+            bak_file: .bak 文件名
+        
+        Returns:
+            删除结果
+        """
+        # 安全检查: 确保 bak_file 确实是该 filename 的备份
+        if not bak_file.startswith(filename + '.bak'):
+            return {'success': False, 'error': '无效的备份文件名'}
+        
+        bak_path = AMIIBO_DATA / bak_file
+        if not bak_path.exists():
+            return {'success': False, 'error': '备份文件不存在'}
+        
+        bak_path.unlink()
+        return {'success': True, 'message': f'已删除 {bak_file}'}
     
     def update_amiibo_info(self, filename: str, **kwargs) -> Dict[str, Any]:
         """
