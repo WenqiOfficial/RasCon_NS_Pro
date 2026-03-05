@@ -173,11 +173,24 @@ function updateScriptButton() {
     
     if (isScriptRunning) {
 btn.innerHTML = '⏹ 停止';
-btn.className = 'btn btn-error btn-sm flex-1';
+btn.className = 'btn btn-error btn-sm';
     } else {
 btn.innerHTML = '▶ 运行';
-btn.className = 'btn btn-primary btn-sm flex-1';
+btn.className = 'btn btn-primary btn-sm';
     }
+}
+
+async function saveScript() {
+    const script = document.getElementById('script-area').value;
+    try {
+        await api.post('/api/script/save', { script });
+        UI.success('脚本已保存');
+    } catch (e) { UI.error(e.message || '保存失败'); }
+}
+
+async function clearScript() {
+    if (!await confirmDialog('确定要清空脚本内容吗？')) return;
+    document.getElementById('script-area').value = '';
 }
 
 async function runScript() {
@@ -233,35 +246,61 @@ function renderRepoFiles(files) {
      // 显示工具栏
      if (toolbar) toolbar.classList.remove('hidden');
      
-     // 按目录分组
-     const folders = {};
+     // 构建嵌套树结构
+     const tree = { folders: {}, files: [] };
      files.forEach(f => {
- const pathParts = f.path.split('/');
- const folderPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : 'Root';
- if (!folders[folderPath]) folders[folderPath] = [];
- folders[folderPath].push(f);
+ const parts = f.path.split('/');
+ let node = tree;
+ for (let i = 0; i < parts.length - 1; i++) {
+     const seg = parts[i];
+     if (!node.folders[seg]) node.folders[seg] = { folders: {}, files: [] };
+     node = node.folders[seg];
+ }
+ node.files.push(f);
      });
      
-     const sortedFolders = Object.keys(folders).sort((a, b) => {
- if (a === 'Root') return -1;
- if (b === 'Root') return 1;
- return a.localeCompare(b);
-     });
-     
-     // 读取折叠状态
      const collapsedRepoGroups = JSON.parse(localStorage.getItem('repo_collapsed_groups') || '{}');
      
-     contentDiv.innerHTML = sortedFolders.map(folder => {
- const items = folders[folder];
- const isCollapsed = collapsedRepoGroups[folder] === true;
- const maxH = items.length * 52 + 10;
- const escapedFolder = folder.replace(/'/g, "\\'");
+     function countFiles(node) {
+ let c = node.files.length;
+ for (const sub of Object.values(node.folders)) c += countFiles(sub);
+ return c;
+     }
+     
+     function renderNode(node, parentPath) {
+ let html = '';
+ const folderNames = Object.keys(node.folders).sort((a, b) => a.localeCompare(b));
  
- const filesHtml = items.map(f => {
-     // 安全处理 URL 和文件名中的引号
+ for (const name of folderNames) {
+     const subNode = node.folders[name];
+     const fullPath = parentPath ? `${parentPath}/${name}` : name;
+     const isCollapsed = collapsedRepoGroups[fullPath] === true;
+     const total = countFiles(subNode);
+     const escapedPath = fullPath.replace(/'/g, "\\'");
+     
+     html += `
+     <div class="tree-group" data-repo-group="${fullPath}">
+         <div class="tree-group-header" onclick="toggleRepoGroup(this, '${escapedPath}')">
+             <span class="toggle ${isCollapsed ? 'collapsed' : ''}"></span>
+             <span class="group-icon">📁</span>
+             <span class="group-name" title="${fullPath}">${name}</span>
+             <span class="group-count">${total}</span>
+             <div class="group-actions">
+                 <button onclick="event.stopPropagation(); downloadAllInFolder('${escapedPath}')" title="下载全部">⬇ 全部</button>
+             </div>
+         </div>
+         <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}">
+             <div class="tree-group-items-inner">
+                 ${renderNode(subNode, fullPath)}
+             </div>
+         </div>
+     </div>`;
+ }
+ 
+ for (const f of node.files) {
      const safeUrl = f.url.replace(/'/g, "\\'");
      const safeName = f.name.replace(/'/g, "\\'");
-     return `
+     html += `
      <div class="repo-file-item">
          <span class="file-icon">📄</span>
          <div class="file-info">
@@ -270,24 +309,12 @@ function renderRepoFiles(files) {
          </div>
          <button onclick="event.stopPropagation(); downloadRepoFile('${safeUrl}', '${safeName}')" class="btn btn-primary btn-sm">⬇</button>
      </div>`;
- }).join('');
+ }
  
- return `
- <div class="tree-group" data-repo-group="${folder}">
-     <div class="tree-group-header" onclick="toggleRepoGroup(this, '${escapedFolder}')">
-         <span class="toggle ${isCollapsed ? 'collapsed' : ''}">▼</span>
-         <span class="group-icon">📁</span>
-         <span class="group-name" title="${folder}">${folder}</span>
-         <span class="group-count">${items.length}</span>
-         <div class="group-actions">
-             <button onclick="event.stopPropagation(); downloadAllInFolder('${escapedFolder}')" title="下载全部">⬇ 全部</button>
-         </div>
-     </div>
-     <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}" style="max-height:${isCollapsed ? 0 : maxH}px;">
-         ${filesHtml}
-     </div>
- </div>`;
-     }).join('');
+ return html;
+     }
+     
+     contentDiv.innerHTML = renderNode(tree, '');
 }
 
 async function downloadRepoFile(url, name) {
@@ -305,18 +332,11 @@ async function downloadRepoFile(url, name) {
 // 本地库分组折叠
 function toggleTreeGroup(headerEl, groupName) {
     const group = headerEl.closest('.tree-group');
-    const itemsEl = group.querySelector('.tree-group-items');
+    const itemsEl = group.querySelector(':scope > .tree-group-items');
     const toggleEl = headerEl.querySelector('.toggle');
     
     const isCollapsed = itemsEl.classList.toggle('collapsed');
     toggleEl.classList.toggle('collapsed', isCollapsed);
-    
-    if (isCollapsed) {
-itemsEl.style.maxHeight = '0px';
-    } else {
-// 计算实际内容高度
-itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
-    }
     
     // 持久化折叠状态
     const state = JSON.parse(localStorage.getItem('amiibo_collapsed_groups') || '{}');
@@ -327,17 +347,11 @@ itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
 // 订阅分组折叠
 function toggleRepoGroup(headerEl, folderName) {
     const group = headerEl.closest('.tree-group');
-    const itemsEl = group.querySelector('.tree-group-items');
+    const itemsEl = group.querySelector(':scope > .tree-group-items');
     const toggleEl = headerEl.querySelector('.toggle');
     
     const isCollapsed = itemsEl.classList.toggle('collapsed');
     toggleEl.classList.toggle('collapsed', isCollapsed);
-    
-    if (isCollapsed) {
-itemsEl.style.maxHeight = '0px';
-    } else {
-itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
-    }
     
     const state = JSON.parse(localStorage.getItem('repo_collapsed_groups') || '{}');
     state[folderName] = isCollapsed;
@@ -349,10 +363,9 @@ function collapseAllGroups() {
     const state = {};
     document.querySelectorAll('#amiibo-list .tree-group').forEach(g => {
 const gName = g.dataset.group;
-const itemsEl = g.querySelector('.tree-group-items');
+const itemsEl = g.querySelector(':scope > .tree-group-items');
 const toggleEl = g.querySelector('.toggle');
 itemsEl.classList.add('collapsed');
-itemsEl.style.maxHeight = '0px';
 toggleEl.classList.add('collapsed');
 state[gName] = true;
     });
@@ -361,10 +374,9 @@ state[gName] = true;
 
 function expandAllGroups() {
     document.querySelectorAll('#amiibo-list .tree-group').forEach(g => {
-const itemsEl = g.querySelector('.tree-group-items');
+const itemsEl = g.querySelector(':scope > .tree-group-items');
 const toggleEl = g.querySelector('.toggle');
 itemsEl.classList.remove('collapsed');
-itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
 toggleEl.classList.remove('collapsed');
     });
     localStorage.setItem('amiibo_collapsed_groups', '{}');
@@ -376,9 +388,7 @@ let _lastRepoFiles = [];
 
 async function downloadAllInFolder(folderPath) {
     const files = _lastRepoFiles.filter(f => {
-        const parts = f.path.split('/');
-        const fp = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Root';
-        return fp === folderPath;
+        return f.path === folderPath + '/' + f.name || f.path.startsWith(folderPath + '/');
     });
     if (files.length === 0) { UI.error('未找到可下载文件'); return; }
     if (!await confirmDialog(`确认下载 "${folderPath}" 下的 ${files.length} 个文件？`)) return;
@@ -414,10 +424,9 @@ function collapseAllRepoGroups() {
     const state = {};
     document.querySelectorAll('#repo-content .tree-group').forEach(g => {
 const folder = g.dataset.repoGroup;
-const itemsEl = g.querySelector('.tree-group-items');
+const itemsEl = g.querySelector(':scope > .tree-group-items');
 const toggleEl = g.querySelector('.toggle');
 itemsEl.classList.add('collapsed');
-itemsEl.style.maxHeight = '0px';
 toggleEl.classList.add('collapsed');
 if (folder) state[folder] = true;
     });
@@ -426,10 +435,9 @@ if (folder) state[folder] = true;
 
 function expandAllRepoGroups() {
     document.querySelectorAll('#repo-content .tree-group').forEach(g => {
-const itemsEl = g.querySelector('.tree-group-items');
+const itemsEl = g.querySelector(':scope > .tree-group-items');
 const toggleEl = g.querySelector('.toggle');
 itemsEl.classList.remove('collapsed');
-itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
 toggleEl.classList.remove('collapsed');
     });
     localStorage.setItem('repo_collapsed_groups', '{}');
@@ -569,18 +577,6 @@ return `
         </div>
         <div class="meta" title="${meta.join(' · ')}">${meta.join(' · ')}</div>
     </div>
-    <div class="amiibo-actions">
-        ${hasBackup ? `
-        <button class="btn-restore" onclick="event.stopPropagation(); restoreAmiibo('${a.filename}')" title="重置数据">
-            ↺
-        </button>` : ''}
-        <button class="btn-scan" onclick="event.stopPropagation(); scanAmiibo('${a.filename}')" title="立即使用">
-            ⚡
-        </button>
-        <button class="btn-delete" onclick="event.stopPropagation(); deleteAmiibo('${a.filename}')" title="删除">
-            🗑
-        </button>
-    </div>
 </div>`;
     };
     
@@ -613,18 +609,18 @@ const collapsedGroups = JSON.parse(localStorage.getItem('amiibo_collapsed_groups
 list.innerHTML = sortedGroups.map(gName => {
     const isCollapsed = collapsedGroups[gName] === true;
     const items = groups[gName];
-    // 预估高度: 每个 item 约 66px
-    const maxH = items.length * 72 + 10;
     return `
     <div class="tree-group" data-group="${gName}">
         <div class="tree-group-header" onclick="toggleTreeGroup(this, '${gName.replace(/'/g, "\\'")}')"> 
-            <span class="toggle ${isCollapsed ? 'collapsed' : ''}">▼</span>
+            <span class="toggle ${isCollapsed ? 'collapsed' : ''}"></span>
             <span class="group-icon">📂</span>
             <span class="group-name">${gName}</span>
             <span class="group-count">${items.length}</span>
         </div>
-        <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}" style="max-height:${isCollapsed ? 0 : maxH}px;">
-            ${items.map(renderItem).join('')}
+        <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}">
+            <div class="tree-group-items-inner">
+                ${items.map(renderItem).join('')}
+            </div>
         </div>
     </div>`;
 }).join('');

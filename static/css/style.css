@@ -453,11 +453,15 @@
 }
 
 .tree-group-header .toggle {
-    font-size: 9px;
-    transition: transform 0.2s;
-    width: 14px;
-    text-align: center;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--color-muted);
+    transition: transform 0.2s ease;
     flex-shrink: 0;
+    font-size: 0;
+    line-height: 0;
 }
 
 .tree-group-header .toggle.collapsed {
@@ -510,12 +514,21 @@
 }
 
 .tree-group-items {
-    overflow: hidden;
-    transition: max-height 0.25s ease;
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.25s ease;
 }
 
 .tree-group-items.collapsed {
-    max-height: 0 !important;
+    grid-template-rows: 0fr;
+}
+
+.tree-group-items-inner {
+    overflow: hidden;
+}
+
+#repo-content .tree-group-items-inner {
+    padding-left: 12px;
 }
 
 /* 订阅文件项 */
@@ -527,7 +540,7 @@
     font-size: 12px;
     background: var(--color-base-300);
     border-radius: 4px;
-    margin: 2px 0 2px 8px;
+    margin: 2px 0;
     transition: all 0.15s;
 }
 
@@ -690,41 +703,7 @@
     margin-top: 1px;
 }
 
-.amiibo-actions {
-    display: flex;
-    gap: 2px;
-    flex-shrink: 0;
-}
 
-.amiibo-actions button {
-    width: 22px;
-    height: 22px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: transparent;
-    color: var(--color-subtle);
-    transition: all 0.15s;
-}
-
-.amiibo-actions .btn-scan:hover {
-    background: rgba(0, 212, 170, 0.15);
-    color: var(--color-primary);
-}
-
-.amiibo-actions .btn-restore:hover {
-    background: rgba(52, 152, 219, 0.15);
-    color: var(--color-info);
-}
-
-.amiibo-actions .btn-delete:hover {
-    background: rgba(231, 76, 60, 0.15);
-    color: var(--color-error);
-}
 
 .hide {
     display: none !important;

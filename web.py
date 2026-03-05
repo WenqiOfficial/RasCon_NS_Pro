@@ -69,6 +69,17 @@ def api_script_run():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/script/save', methods=['POST'])
+def api_script_save():
+    """AJAX API: 保存脚本 (仅保存，不运行)"""
+    try:
+        data = request.get_json()
+        script = data.get('script', '')
+        write('scriptcopy.txt', script)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/script/stop', methods=['POST'])
 def api_script_stop():
     """AJAX API: 停止脚本 (替代旧 form POST /script/stop)"""

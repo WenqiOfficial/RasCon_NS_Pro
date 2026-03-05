@@ -247,11 +247,12 @@
                         <h3 class="text-xs font-semibold uppercase tracking-wider">📜 脚本</h3>
                         <span class="text-[10px] text-base-content/30">支持宏命令</span>
                     </div>
-                    <div id="script-form" class="flex flex-col flex-1 gap-2">
+                    <div id="script-form" class="flex flex-1 gap-2 min-h-0">
                         <textarea id="script-area" class="textarea textarea-bordered flex-1 min-h-[80px] resize-none font-mono text-xs leading-relaxed" spellcheck="false" placeholder="# 按A键&#10;a&#10;# 等待1秒&#10;wait 1000&#10;# 左摇杆推左&#10;ls left,100"></textarea>
-                        <div class="flex gap-1.5">
-                            <button type="button" id="script-toggle-btn" onclick="toggleScript()" class="btn btn-primary btn-sm flex-1">▶ 运行</button>
-                            <button type="button" onclick="document.getElementById('script-area').value=''" class="btn btn-ghost btn-sm">🗑</button>
+                        <div class="flex flex-col gap-1.5 shrink-0">
+                            <button type="button" onclick="saveScript()" class="btn btn-ghost btn-sm" title="保存">💾 保存</button>
+                            <button type="button" id="script-toggle-btn" onclick="toggleScript()" class="btn btn-primary btn-sm">▶ 运行</button>
+                            <button type="button" onclick="clearScript()" class="btn btn-ghost btn-sm" title="清空">🗑 清空</button>
                         </div>
                     </div>
                 </div>
