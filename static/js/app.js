@@ -552,11 +552,10 @@ const color = colors[Math.abs(hash) % colors.length];
 const hasBackup = a.has_origin; 
 
 // 图片处理
-let iconHtml = `<div class="amiibo-icon" style="background:${color}1a; color:${color}; border-color:${color}33;">${char}</div>`;
+let iconHtml = `<div class="amiibo-icon" style="background:${color}1a; color:${color}; border-color:${color}33">${char}</div>`;
 if (a.image_url) {
-    // 使用 object-fit: contain 显示完整图片
-    iconHtml = `<div class="amiibo-icon" style="background:transparent; border:none; padding:0; overflow:hidden;">
-         <img src="${a.image_url}" style="width:100%; height:100%; object-fit:contain;" alt="${displayName}" loading="lazy">
+    iconHtml = `<div class="amiibo-icon has-image">
+         <img src="${a.image_url}" alt="${displayName}" loading="lazy">
     </div>`;
 }
 
@@ -885,24 +884,27 @@ const keyMap = {
     'ArrowLeft': { type: 'stick', stick: 'rs', direction: 'left' },
     'ArrowDown': { type: 'stick', stick: 'rs', direction: 'down' },
     'ArrowRight': { type: 'stick', stick: 'rs', direction: 'right' },
+    // 摇杆中心按下
+    'Comma': { type: 'button', button: 'l_stick' },
+    'Period': { type: 'button', button: 'r_stick' },
     // 常用按键
-    'Space': { type: 'button', button: 'a' },
-    'Enter': { type: 'button', button: 'b' },
+    'KeyI': { type: 'button', button: 'x' },
+    'KeyJ': { type: 'button', button: 'y' },
+    'KeyL': { type: 'button', button: 'a' },
+    'KeyK': { type: 'button', button: 'b' },
     'KeyQ': { type: 'button', button: 'l' },
     'KeyE': { type: 'button', button: 'r' },
-    'KeyZ': { type: 'button', button: 'zl' },
-    'KeyC': { type: 'button', button: 'zr' },
-    'KeyX': { type: 'button', button: 'x' },
-    'KeyY': { type: 'button', button: 'y' },
-    'KeyH': { type: 'button', button: 'home' },
-    'KeyP': { type: 'button', button: 'plus' },
-    'KeyM': { type: 'button', button: 'minus' },
-    'KeyK': { type: 'button', button: 'capture' },
-    // 十字键 (Shift + 方向键)
-    'ShiftArrowUp': { type: 'button', button: 'up' },
-    'ShiftArrowDown': { type: 'button', button: 'down' },
-    'ShiftArrowLeft': { type: 'button', button: 'left' },
-    'ShiftArrowRight': { type: 'button', button: 'right' },
+    'Digit1': { type: 'button', button: 'zl' },
+    'Digit3': { type: 'button', button: 'zr' },
+    'BracketRight': { type: 'button', button: 'home' },
+    'BracketLeft': { type: 'button', button: 'capture' },
+    'Equal': { type: 'button', button: 'plus' },
+    'Minus': { type: 'button', button: 'minus' },
+    // 十字键 (Shift + wasd)
+    'ShiftKeyW': { type: 'button', button: 'up' },
+    'ShiftKeyA': { type: 'button', button: 'left' },
+    'ShiftKeyS': { type: 'button', button: 'down' },
+    'ShiftKeyD': { type: 'button', button: 'right' },
 };
 
 // 当前按下的键
