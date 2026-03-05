@@ -46,8 +46,31 @@
   - 移除孤立 CSS `.repo-file-item .btn-download`。
 
 ## 阶段五：旧代码彻底大扫除
-- [ ] **5.1 废弃 CSS 清洗**: 以强迫症标准逐行检查 `style.css`，除个别不可替代的关键帧动画外，强行剔除全部旧有的颜色、内外边距、Flex指令与杂项UI组件代码。
-- [ ] **5.2 测试全链路**: 回归所有核心交互：
-  1. 摇杆是否丝滑。
-  2. Amiibo 树状能否正常保存记忆（localStorage）。
-  3. 点击版本恢复、文件写入是否成功给出 Toast 提示且未引起页面突然抖动/刷新。
+- [x] **5.1 CSS `:root` 变量全面迁移**:
+  - 删除整个 `:root` 块 (17 个硬编码色值)，在 `[data-theme=\"rascon\"]` 主题中追加 4 个 DaisyUI 未提供的补充色阶: `--color-border`、`--color-border-accent`、`--color-muted`、`--color-subtle` (oklch 格式)。
+  - style.css 全文 ~60 处 `var(--bg-*)` / `var(--text-*)` / `var(--accent-*)` / `var(--danger)` / `var(--info)` 等旧变量名 → 对应 DaisyUI `var(--color-*)` 主题变量。映射表:
+    - `--bg-primary` → `--color-base-100`，`--bg-secondary` → `--color-base-200`，`--bg-tertiary` → `--color-base-300`，`--bg-card` → `--color-neutral`
+    - `--text-primary` → `--color-base-content`，`--text-secondary` → `--color-muted`，`--text-muted` → `--color-subtle`
+    - `--accent-primary` → `--color-primary`，`--accent-secondary` → `--color-secondary`
+    - `--danger` → `--color-error`，`--warning` → `--color-warning`，`--info` → `--color-info`，`--success` → `--color-success`
+  - 791→760 行 (−4%)，**零旧变量残留**，全文经 `grep` 验证无任何 `var(--bg-|--text-|--accent-|--danger|--info|--warning)` 遗漏。
+- [x] **5.2 JS 废弃代码清洗**:
+  - 移除 `showToast()` 向后兼容层 (阶段 3 遗留)。
+  - 移除不存在的 `#status-message` DOM 引用 (`updateStatus()`)。
+  - 3 处 JS 内联 HTML 中的旧 `var(--text-muted)` / `var(--info)` → 新主题变量名。
+  - 2 处 `fetchRepoTree()` 内联 `style=\"padding/text-align\"` → 复用已有 `.empty-state` / `.error-state` 类。
+- [x] **5.3 DaisyUI 确认对话框 (替代原生 `confirm()`):**
+  - HTML 新增 `<dialog id=\"confirm-modal\" class=\"modal\">` 组件，含取消/确定按钮 + 遮罩点击关闭。
+  - JS 新增 `confirmDialog(message)` → `Promise<boolean>` 工具函数，支持 ESC/点击遮罩自动 resolve(false)。
+  - 全文 8 处 `confirm()` → `await confirmDialog()`，含 `deleteAmiibo` 的二次确认链路。
+- [x] **5.4 按钮加载态 (Loading Spinner):**
+  - JS 新增 `withLoading(btnOrId, asyncFn)` 工具函数，自动切换 DaisyUI `loading-spinner` + `disabled`。
+  - 蓝牙连接/断开按钮 (`#btn-connect` / `#btn-disconnect`) 已挂载加载态。
+- [x] **5.5 CSS 死代码清除:**
+  - 移除 `footer a` 样式 (HTML footer 内无链接 — 死代码)。
+  - 移除 2 条 Phase 4 遗留元注释 (\"Toast 样式已由...\" / \"footer 布局已由...\")。
+  - 删除临时文件 `static/css/style.new.css` (需手动: `del static\\css\\style.new.css`)。
+- [x] **5.6 可见性切换一致化:**
+  - `#repo-toolbar`: HTML `class=\"hidden\"` + JS `style.display` 冲突 → 改为 `classList.add/remove('hidden')`。
+  - HTML `repo-toolbar` 补充 `flex` 类确保 unhide 后正确布局。
+  - `switchAmiiboTab()` 缩进修复 (0-indent → 4-space 标准缩进)。

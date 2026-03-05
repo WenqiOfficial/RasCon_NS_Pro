@@ -50,9 +50,14 @@
         --border: 1px;
         --depth: 0;
         --noise: 0;
+        /* 补充色阶 — DaisyUI 5 未提供的细分层级 */
+        --color-border: oklch(0.21 0 0);           /* #2a2a2a */
+        --color-border-accent: oklch(0.25 0 0);    /* #333333 */
+        --color-muted: oklch(0.60 0 0);             /* #888888 */
+        --color-subtle: oklch(0.41 0 0);            /* #555555 */
     }
     </style>
-    <!-- 项目组件样式 (逐阶段缩减) -->
+    <!-- 组件样式 — 纯布局 & 动画，零颜色硬编码 -->
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body class="min-h-screen p-5">
@@ -65,8 +70,8 @@
                 <div class="text-xl font-bold tracking-tight">RasCon <span class="text-primary">Pro</span></div>
             </div>
             <div class="flex items-center gap-2">
-                <button type="button" onclick="connectBluetooth()" class="btn btn-primary btn-sm">连接</button>
-                <button type="button" onclick="disconnectBluetooth()" class="btn btn-error btn-sm">断开</button>
+                <button type="button" onclick="connectBluetooth()" id="btn-connect" class="btn btn-primary btn-sm">连接</button>
+                <button type="button" onclick="disconnectBluetooth()" id="btn-disconnect" class="btn btn-error btn-sm">断开</button>
                 <div class="flex items-center gap-2 ml-2">
                     <div class="status-dot" id="status-dot"></div>
                     <span class="text-xs text-base-content/50" id="status-text">未连接</span>
@@ -225,7 +230,7 @@
                             <input type="text" id="repo-url-input" class="input input-bordered input-sm flex-1" placeholder="GitHub: User/Repo">
                             <button onclick="fetchRepoTree()" class="btn btn-primary btn-sm">获取</button>
                         </div>
-                        <div class="hidden gap-1.5 mb-2" id="repo-toolbar">
+                        <div class="hidden flex gap-1.5 mb-2" id="repo-toolbar">
                             <input type="text" id="repo-search-input" class="input input-bordered input-sm flex-1" placeholder="🔍 筛选文件..." onkeyup="filterRepoFiles(this.value)">
                             <button onclick="collapseAllRepoGroups()" class="btn btn-ghost btn-sm" title="全部折叠">⊟</button>
                             <button onclick="expandAllRepoGroups()" class="btn btn-ghost btn-sm" title="全部展开">⊞</button>
@@ -259,8 +264,20 @@
         </footer>
     </div>
 
-    <!-- Toast 消息 (DaisyUI) -->
+    <!-- Toast -->
     <div class="toast toast-end toast-bottom z-50" id="toast-container"></div>
+
+    <!-- 确认对话框 (DaisyUI Modal — 替代原生 confirm()) -->
+    <dialog id="confirm-modal" class="modal">
+        <div class="modal-box">
+            <p id="confirm-message" class="py-4 text-sm leading-relaxed whitespace-pre-line"></p>
+            <div class="modal-action">
+                <button id="confirm-cancel" class="btn btn-ghost btn-sm">取消</button>
+                <button id="confirm-ok" class="btn btn-primary btn-sm">确定</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
+    </dialog>
 
     <!-- 服务端数据注入 -->
     <script>

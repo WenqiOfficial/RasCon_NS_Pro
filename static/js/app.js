@@ -71,48 +71,88 @@ const UI = {
     info(m, ms)    { this.toast(m, 'info', ms); },
 };
 
-/** @deprecated 向后兼容 — 阶段 5 中移除 */
-function showToast(msg, type) { UI.toast(msg, type); }
+// ==================== DaisyUI 确认对话框 ====================
+function confirmDialog(message) {
+    return new Promise(resolve => {
+        const modal   = document.getElementById('confirm-modal');
+        const msgEl   = document.getElementById('confirm-message');
+        const okBtn   = document.getElementById('confirm-ok');
+        const cancelBtn = document.getElementById('confirm-cancel');
+
+        msgEl.textContent = message;
+
+        const cleanup = result => {
+            modal.close();
+            okBtn.removeEventListener('click', onOk);
+            cancelBtn.removeEventListener('click', onCancel);
+            modal.removeEventListener('close', onBackdrop);
+            resolve(result);
+        };
+        const onOk       = () => cleanup(true);
+        const onCancel   = () => cleanup(false);
+        const onBackdrop = () => cleanup(false);   // ESC / 点击遮罩
+
+        okBtn.addEventListener('click', onOk);
+        cancelBtn.addEventListener('click', onCancel);
+        modal.addEventListener('close', onBackdrop);
+        modal.showModal();
+    });
+}
 
 // ==================== UI / Layout Logic ====================
+
+/** 按钮加载态包装 (DaisyUI loading spinner) */
+async function withLoading(btnOrId, asyncFn) {
+    const btn = typeof btnOrId === 'string' ? document.getElementById(btnOrId) : btnOrId;
+    if (!btn) return asyncFn();
+    const orig = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading loading-spinner loading-xs"></span>`;
+    try {
+        return await asyncFn();
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+}
+
 function toggleFullscreen() {
     document.body.classList.toggle('fullscreen-active');
 }
 
 // ==================== 蓝牙连接 ====================
 async function connectBluetooth() {
-    try {
-        await api.post('/api/bluez', { action: 'ON' });
-        UI.info('正在连接...');
-    } catch (e) { UI.error(e.message || '连接失败'); }
+    await withLoading('btn-connect', async () => {
+        try {
+            await api.post('/api/bluez', { action: 'ON' });
+            UI.info('正在连接...');
+        } catch (e) { UI.error(e.message || '连接失败'); }
+    });
 }
 
 async function disconnectBluetooth() {
-    try {
-        await api.post('/api/bluez', { action: 'OFF' });
-        UI.info('正在断开...');
-    } catch (e) { UI.error(e.message || '断开失败'); }
+    await withLoading('btn-disconnect', async () => {
+        try {
+            await api.post('/api/bluez', { action: 'OFF' });
+            UI.info('正在断开...');
+        } catch (e) { UI.error(e.message || '断开失败'); }
+    });
 }
 
 function switchAmiiboTab(tab) {
-    // Update Tab Buttons
     document.querySelectorAll('[role="tablist"] .tab').forEach(b => b.classList.remove('tab-active'));
     document.getElementById('tab-' + tab).classList.add('tab-active');
-    
-    // Update Views
+
     document.getElementById('amiibo-library-view').style.display = 'none';
     document.getElementById('amiibo-subscription-view').style.display = 'none';
-    
+
     if (tab === 'library') {
-document.getElementById('amiibo-library-view').style.display = 'flex';
+        document.getElementById('amiibo-library-view').style.display = 'flex';
     } else {
-document.getElementById('amiibo-subscription-view').style.display = 'flex';
-// Auto-load last repo if field is empty
-const lastRepo = localStorage.getItem('last_amiibo_repo');
-const input = document.getElementById('repo-url-input');
-if (lastRepo && !input.value) {
-    input.value = lastRepo;
-}
+        document.getElementById('amiibo-subscription-view').style.display = 'flex';
+        const lastRepo = localStorage.getItem('last_amiibo_repo');
+        const input = document.getElementById('repo-url-input');
+        if (lastRepo && !input.value) input.value = lastRepo;
     }
 }
 
@@ -121,9 +161,9 @@ let isScriptRunning = false;
 
 async function toggleScript() {
     if (isScriptRunning) {
-await stopScript();
+        await stopScript();
     } else {
-await runScript();
+        await runScript();
     }
 }
 
@@ -169,7 +209,7 @@ async function fetchRepoTree() {
     if (!repo) { UI.error('请输入仓库地址'); return; }
 
     const contentDiv = document.getElementById('repo-content');
-    contentDiv.innerHTML = '<div class="empty-state" style="padding:20px; text-align:center;">正在从 GitHub API 获取文件列表...</div>';
+    contentDiv.innerHTML = '<div class="empty-state">正在从 GitHub API 获取文件列表...</div>';
 
     try {
         const data = await api.post('/api/amiibo/subscription', { repo });
@@ -177,7 +217,7 @@ async function fetchRepoTree() {
         _lastRepoFiles = data.files;
         renderRepoFiles(data.files);
     } catch (e) {
-        contentDiv.innerHTML = `<div class="error-state" style="text-align:center; padding:20px;">${e.message}</div>`;
+        contentDiv.innerHTML = `<div class="error-state">${e.message}</div>`;
     }
 }
 
@@ -186,12 +226,12 @@ function renderRepoFiles(files) {
      const toolbar = document.getElementById('repo-toolbar');
      if(!files || files.length === 0) {
  contentDiv.innerHTML = '<div class="empty-state">该仓库未找到 .bin 文件</div>';
- if (toolbar) toolbar.style.display = 'none';
+ if (toolbar) toolbar.classList.add('hidden');
  return;
      }
      
      // 显示工具栏
-     if (toolbar) toolbar.style.display = '';
+     if (toolbar) toolbar.classList.remove('hidden');
      
      // 按目录分组
      const folders = {};
@@ -251,7 +291,7 @@ function renderRepoFiles(files) {
 }
 
 async function downloadRepoFile(url, name) {
-    if (!confirm(`确认下载 ${name}?`)) return;
+    if (!await confirmDialog(`确认下载 ${name}?`)) return;
     UI.info(`正在下载 ${name}...`);
     try {
         await api.post('/api/amiibo/download', { url, name });
@@ -341,7 +381,7 @@ async function downloadAllInFolder(folderPath) {
         return fp === folderPath;
     });
     if (files.length === 0) { UI.error('未找到可下载文件'); return; }
-    if (!confirm(`确认下载 "${folderPath}" 下的 ${files.length} 个文件？`)) return;
+    if (!await confirmDialog(`确认下载 "${folderPath}" 下的 ${files.length} 个文件？`)) return;
 
     UI.info(`开始批量下载 ${files.length} 个文件...`);
     let ok = 0, fail = 0;
@@ -432,7 +472,7 @@ async function refreshAmiiboList() {
 }
 
 async function updateAmiiboDatabase() {
-    if (!confirm('是否从 AmiiboAPI 下载最新的 Amiibo 数据库并匹配本地文件？\n这需要联网，可能花费几秒钟。')) return;
+    if (!await confirmDialog('是否从 AmiiboAPI 下载最新的 Amiibo 数据库并匹配本地文件？\n这需要联网，可能花费几秒钟。')) return;
     UI.info('正在下载 Amiibo 数据库...');
     try {
         await api.post('/api/amiibo/updatesource');
@@ -486,7 +526,7 @@ function renderAmiiboList(amiibos) {
 list.innerHTML = `<div class="empty-state">
     <div style="font-size:24px; margin-bottom:10px; opacity:0.5;">📦</div>
     <div>暂无 Amiibo 文件</div>
-    <div style="font-size:11px; margin-top:5px; color:var(--text-muted);">点击上方 "上传" 添加 .bin 文件</div>
+    <div style="font-size:11px; margin-top:5px; color:var(--color-subtle);">点击上方 "上传" 添加 .bin 文件</div>
 </div>`;
 return;
     }
@@ -526,7 +566,7 @@ return `
     <div class="amiibo-info">
         <div class="name" title="${a.filename}">
             ${displayName}
-            ${hasBackup ? '<span style="color:var(--info); font-size:10px; margin-left:4px;" title="有原始备份">↺</span>' : ''}
+            ${hasBackup ? '<span style="color:var(--color-info); font-size:10px; margin-left:4px;" title="有原始备份">↺</span>' : ''}
         </div>
         <div class="meta" title="${meta.join(' · ')}">${meta.join(' · ')}</div>
     </div>
@@ -707,7 +747,7 @@ async function loadVersionHistory(filename) {
         </div>`;
     }).join('');
 } else {
-    versionList.innerHTML = '<div class="version-empty">无版本记录<br><small style="color:var(--text-muted)">Switch 写入数据后将自动生成备份</small></div>';
+    versionList.innerHTML = '<div class="version-empty">无版本记录<br><small style="color:var(--color-subtle)">Switch 写入数据后将自动生成备份</small></div>';
 }
     } catch (e) {
 versionList.innerHTML = '<div class="version-empty">加载版本失败</div>';
@@ -717,7 +757,7 @@ versionList.innerHTML = '<div class="version-empty">加载版本失败</div>';
 // 版本管理操作
 async function restoreToVersion(filename, versionType, bakFile) {
     const label = versionType === 'origin' ? '原始版本' : bakFile;
-    if (!confirm(`确定要将 ${filename} 恢复到 ${label}？\n当前数据将被覆盖。`)) return;
+    if (!await confirmDialog(`确定要将 ${filename} 恢复到 ${label}？\n当前数据将被覆盖。`)) return;
     try {
         await api.post('/api/amiibo/restore_version', { filename, version_type: versionType, bak_file: bakFile });
         UI.success('已恢复到指定版本');
@@ -727,7 +767,7 @@ async function restoreToVersion(filename, versionType, bakFile) {
 }
 
 async function deleteVersion(filename, bakFile) {
-    if (!confirm(`确定删除备份 ${bakFile}？此操作不可恢复。`)) return;
+    if (!await confirmDialog(`确定删除备份 ${bakFile}？此操作不可恢复。`)) return;
     try {
         await api.post('/api/amiibo/delete_version', { filename, bak_file: bakFile });
         UI.success('已删除备份');
@@ -765,7 +805,7 @@ async function scanAmiibo(filename) {
 
 // 恢复 Amiibo
 async function restoreAmiibo(filename) {
-    if (!confirm(`确定要将 ${filename} 恢复到原始状态吗？`)) return;
+    if (!await confirmDialog(`确定要将 ${filename} 恢复到原始状态吗？`)) return;
     try {
         await api.post('/api/amiibo/restore', { filename });
         UI.success('已恢复到原始状态');
@@ -775,8 +815,8 @@ async function restoreAmiibo(filename) {
 
 // 删除 Amiibo
 async function deleteAmiibo(filename) {
-    if (!confirm(`确定要删除 ${filename} 吗？`)) return;
-    const removeOrigin = confirm('是否同时删除原始备份？');
+    if (!await confirmDialog(`确定要删除 ${filename} 吗？`)) return;
+    const removeOrigin = await confirmDialog('是否同时删除原始备份？');
     try {
         await api.post('/api/amiibo/delete', { filename, remove_origin: removeOrigin });
         UI.success('已删除');
@@ -1002,11 +1042,9 @@ async function updateStatus() {
         const data = await api.get('/api/status');
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
-        const statusMessage = document.getElementById('status-message');
 
         if (statusDot) statusDot.classList.toggle('connected', !!data.connected);
         if (statusText) statusText.textContent = data.connected ? '已连接' : '未连接';
-        if (statusMessage && data.joycontrol_message) statusMessage.textContent = data.joycontrol_message;
         if (data.current_amiibo) updateCurrentAmiibo(data.current_amiibo);
     } catch (e) {
         console.error('状态更新失败:', e.message);
