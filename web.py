@@ -41,6 +41,43 @@ def clean(file):
 
 # ==================== API 端点 ====================
 
+@app.route('/api/bluez', methods=['POST'])
+def api_bluez():
+    """AJAX API: 蓝牙连接/断开 (替代旧 form POST /bluez)"""
+    try:
+        data = request.get_json()
+        action = data.get('action', '')
+        if action not in ('ON', 'OFF'):
+            return jsonify({'success': False, 'error': '无效操作'})
+        write('command.txt', action)
+        return jsonify({'success': True, 'action': action})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/script/run', methods=['POST'])
+def api_script_run():
+    """AJAX API: 运行脚本 (替代旧 form POST /script/run)"""
+    try:
+        data = request.get_json()
+        script = data.get('script', '')
+        if not script.strip():
+            return jsonify({'success': False, 'error': '脚本为空'})
+        write('script.txt', script)
+        write('scriptcopy.txt', script)
+        write('command.txt', 'run')
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/api/script/stop', methods=['POST'])
+def api_script_stop():
+    """AJAX API: 停止脚本 (替代旧 form POST /script/stop)"""
+    try:
+        write('command.txt', 'stop')
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/btn', methods=['POST'])
 def api_btn():
     """AJAX API: 发送按键命令（支持长按）"""
@@ -445,76 +482,6 @@ def index():
     msg,script=default()
     return render_template('index.html',msg = msg,script =script)
 
-@app.route('/bluez',methods=['POST'])
-def bluez():
-    if request.method == 'POST':
-        #暂时无法使用
-        #write('message.txt'request.form['btn']+'\n')
-        write('message.txt','该功能暂时无法使用\n')
-        write('command.txt',request.form['btn'])
-
-    msg,script=default()
-    return render_template('index.html',msg = msg,script =script)
-
-@app.route('/btn',methods=['POST'])
-def btn():
-    if request.method == 'POST':
-        btn = request.form['btn']
-        write('command.txt',btn)
-        if btn == 'amiibo clean':
-            path = get_file_path('amiibo')
-            if os.path.exists(path):
-                shutil.rmtree(path)
-            os.mkdir(path)
-            msg,script=default()
-            return render_template('index.html',msg =msg,script =script,amiibo='cleaned!')
-        elif btn == 'amiibo remove':
-            write('command.txt','amiibo remove')
-            msg,script=default()
-            return render_template('index.html',msg = msg,script =script,amiibo='removed!')
-
-    msg,script=default()
-    return render_template('index.html',msg = msg,script =script)
-
-@app.route('/script/run',methods=['POST'])
-def run():
-    if request.method == 'POST':
-        script = request.form['script']
-        write('script.txt',script)
-        write('scriptcopy.txt',script)
-        write('command.txt','run')
-        
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True})
-
-    msg,script=default()
-    return render_template('index.html',msg = msg,script =script)
-
-@app.route('/script/stop',methods=['POST'])
-def stop():
-    if request.method == 'POST':
-        write('command.txt','stop')
-        
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return jsonify({'success': True})
-
-    msg,script=default()
-    return render_template('index.html',msg = msg,script =script)
-
-#Amiibo
-@app.route('/amiibo/upload',methods=['POST'])
-def upload():
-    file = request.files['file']
-    filename = file.filename
-    if filename.rsplit('.', 1)[1].lower() in {'bin','BIN'}:
-        filename = filename.replace(' ','_').lower()
-        file.save(get_file_path(os.path.join('amiibo', filename)))
-        write('command.txt','amiibo '+filename)
-        msg,script=default()
-        return render_template('index.html',msg = msg,script =script,amiibo='OK!')
-    else:
-        msg,script=default()
-        return render_template('index.html',msg = msg,script =script,amiibo='NO! This isn`t bin file.') 
 #动森批量刷amiibo跳转
 @app.route('/amiibos')
 def toAmiibosUpload():
@@ -542,13 +509,6 @@ def amiibosUpload():
         return render_template('amiibos.html',msg = '上传成功，脚本生成完毕，请按下方按钮跳转查看')
     else:
         return render_template('amiibos.html',msg = '上传失败，仅支持zip压缩文件')
-
-#raspi
-@app.route('/raspi',methods=['POST'])
-def raspi():
-    if request.method == 'POST':
-        cmd = request.form['btn']
-        os.system(cmd)
 
 if __name__ == '__main__':
     clean('message.txt')
