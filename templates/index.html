@@ -760,6 +760,151 @@
             min-height: 0;
         }
 
+        /* 可折叠分组 */
+        .tree-group {
+            margin-bottom: 2px;
+        }
+
+        .tree-group-header {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.15s;
+            -webkit-user-select: none;
+            user-select: none;
+            gap: 4px;
+        }
+
+        .tree-group-header:hover {
+            background: var(--bg-card);
+            border-color: var(--border-accent);
+            color: var(--text-secondary);
+        }
+
+        .tree-group-header .toggle {
+            font-size: 9px;
+            transition: transform 0.2s;
+            width: 14px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .tree-group-header .toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .tree-group-header .group-icon {
+            margin-right: 2px;
+        }
+
+        .tree-group-header .group-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tree-group-header .group-count {
+            font-weight: normal;
+            opacity: 0.7;
+            background: var(--bg-card);
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            flex-shrink: 0;
+        }
+
+        .tree-group-header .group-actions {
+            display: flex;
+            gap: 4px;
+            margin-left: 4px;
+            flex-shrink: 0;
+        }
+
+        .tree-group-header .group-actions button {
+            padding: 2px 8px;
+            font-size: 10px;
+            border: 1px solid var(--border-accent);
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            transition: all 0.15s;
+        }
+
+        .tree-group-header .group-actions button:hover {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        .tree-group-items {
+            overflow: hidden;
+            transition: max-height 0.25s ease;
+        }
+
+        .tree-group-items.collapsed {
+            max-height: 0 !important;
+        }
+
+        /* 订阅文件项 */
+        .repo-file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            margin: 2px 0 2px 8px;
+            transition: all 0.15s;
+        }
+
+        .repo-file-item:hover {
+            background: var(--bg-card);
+        }
+
+        .repo-file-item .file-icon {
+            margin-right: 8px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .repo-file-item .file-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .repo-file-item .file-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+        }
+
+        .repo-file-item .file-meta {
+            color: var(--text-muted);
+            font-size: 10px;
+            margin-top: 1px;
+        }
+
+        .repo-file-item .btn-download {
+            padding: 3px 10px;
+            margin-left: 6px;
+            flex-shrink: 0;
+        }
+
+        .repo-toolbar-hidden {
+            display: none;
+        }
+
         /* Amiibo 视图 */
         #amiibo-library-view,
         #amiibo-subscription-view {
@@ -1585,6 +1730,8 @@
                             <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-accent btn-sm">➕ 上传</button>
                             <input type="file" id="amiibo-file" accept=".bin" multiple hidden onchange="uploadAmiibo()">
                             <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn btn-sm">📁 分组</button>
+                            <button onclick="collapseAllGroups()" class="btn btn-sm" title="全部折叠" id="btn-collapse-all">⊟</button>
+                            <button onclick="expandAllGroups()" class="btn btn-sm" title="全部展开" id="btn-expand-all">⊞</button>
                             <button onclick="updateAmiiboDatabase()" class="btn btn-sm">☁️ 更新DB</button>
                         </div>
                         <div class="amiibo-content-split">
@@ -1640,6 +1787,11 @@
                         <div class="amiibo-toolbar">
                             <input type="text" id="repo-url-input" class="amiibo-search-input" placeholder="GitHub: User/Repo">
                             <button onclick="fetchRepoTree()" class="btn btn-accent btn-sm">获取</button>
+                        </div>
+                        <div class="amiibo-toolbar repo-toolbar-hidden" id="repo-toolbar">
+                            <input type="text" id="repo-search-input" class="amiibo-search-input" placeholder="🔍 筛选文件..." onkeyup="filterRepoFiles(this.value)">
+                            <button onclick="collapseAllRepoGroups()" class="btn btn-sm" title="全部折叠">⊟</button>
+                            <button onclick="expandAllRepoGroups()" class="btn btn-sm" title="全部展开">⊞</button>
                         </div>
                         <div id="repo-content">
                             <div class="empty-state">输入 GitHub 仓库地址<br><small>例如: Falco/amiibo</small></div>
@@ -1783,7 +1935,8 @@
                 const data = await res.json();
                 
                 if(data.success) {
-                    localStorage.setItem('last_amiibo_repo', data.repo); // Save successful repo
+                    localStorage.setItem('last_amiibo_repo', data.repo);
+                    _lastRepoFiles = data.files; // 缓存文件列表供批量下载使用
                     renderRepoFiles(data.files);
                 } else {
                     contentDiv.innerHTML = `<div class="error-state" style="text-align:center; padding:20px;">${data.error}</div>`;
@@ -1795,27 +1948,71 @@
 
         function renderRepoFiles(files) {
              const contentDiv = document.getElementById('repo-content');
+             const toolbar = document.getElementById('repo-toolbar');
              if(!files || files.length === 0) {
-                 contentDiv.innerHTML = '<div class="empty-state" style="padding:20px; text-align:center;">该仓库未找到 .bin 文件</div>';
+                 contentDiv.innerHTML = '<div class="empty-state">该仓库未找到 .bin 文件</div>';
+                 if (toolbar) toolbar.classList.add('repo-toolbar-hidden');
                  return;
              }
              
-             // 简单的按路径显示
-             contentDiv.innerHTML = files.map(f => {
-                const displayName = f.name;
-                const pathParts = f.path.split('/');
-                const displayPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : 'Root';
-                
-                return `
-                <div style="display:flex; align-items:center; padding:10px; border-bottom:1px solid var(--border-color); font-size:13px; background:var(--bg-tertiary); border-radius:6px; margin-bottom:4px;">
-                    <div style="margin-right:12px; font-size:16px;">📄</div>
-                    <div style="flex:1; overflow:hidden;">
-                        <div style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:500;" title="${f.name}">${displayName}</div>
-                        <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">${displayPath} · ${(f.size/1024).toFixed(1)} KB</div>
-                    </div>
-                    <button onclick="downloadRepoFile('${f.url}', '${f.name}')" class="btn btn-sm btn-accent" style="padding:4px 12px; margin-left:8px;">⬇ 下载</button>
-                </div>
-             `}).join('');
+             // 显示工具栏
+             if (toolbar) toolbar.classList.remove('repo-toolbar-hidden');
+             
+             // 按目录分组
+             const folders = {};
+             files.forEach(f => {
+                 const pathParts = f.path.split('/');
+                 const folderPath = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : 'Root';
+                 if (!folders[folderPath]) folders[folderPath] = [];
+                 folders[folderPath].push(f);
+             });
+             
+             const sortedFolders = Object.keys(folders).sort((a, b) => {
+                 if (a === 'Root') return -1;
+                 if (b === 'Root') return 1;
+                 return a.localeCompare(b);
+             });
+             
+             // 读取折叠状态
+             const collapsedRepoGroups = JSON.parse(localStorage.getItem('repo_collapsed_groups') || '{}');
+             
+             contentDiv.innerHTML = sortedFolders.map(folder => {
+                 const items = folders[folder];
+                 const isCollapsed = collapsedRepoGroups[folder] === true;
+                 const maxH = items.length * 52 + 10;
+                 const escapedFolder = folder.replace(/'/g, "\\'");
+                 
+                 const filesHtml = items.map(f => {
+                     // 安全处理 URL 和文件名中的引号
+                     const safeUrl = f.url.replace(/'/g, "\\'");
+                     const safeName = f.name.replace(/'/g, "\\'");
+                     return `
+                     <div class="repo-file-item">
+                         <span class="file-icon">📄</span>
+                         <div class="file-info">
+                             <div class="file-name" title="${f.name}">${f.name}</div>
+                             <div class="file-meta">${(f.size/1024).toFixed(1)} KB</div>
+                         </div>
+                         <button onclick="event.stopPropagation(); downloadRepoFile('${safeUrl}', '${safeName}')" class="btn btn-sm btn-accent btn-download">⬇</button>
+                     </div>`;
+                 }).join('');
+                 
+                 return `
+                 <div class="tree-group" data-repo-group="${folder}">
+                     <div class="tree-group-header" onclick="toggleRepoGroup(this, '${escapedFolder}')">
+                         <span class="toggle ${isCollapsed ? 'collapsed' : ''}">▼</span>
+                         <span class="group-icon">📁</span>
+                         <span class="group-name" title="${folder}">${folder}</span>
+                         <span class="group-count">${items.length}</span>
+                         <div class="group-actions">
+                             <button onclick="event.stopPropagation(); downloadAllInFolder('${escapedFolder}')" title="下载全部">⬇ 全部</button>
+                         </div>
+                     </div>
+                     <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}" style="max-height:${isCollapsed ? 0 : maxH}px;">
+                         ${filesHtml}
+                     </div>
+                 </div>`;
+             }).join('');
         }
 
         async function downloadRepoFile(url, name) {
@@ -1831,14 +2028,161 @@
                 const data = await res.json();
                 if(data.success) {
                     showToast('下载成功！已添加到库', 'success');
-                    // closeSubscriptionModal(); // Keeping it open is better
-                    refreshAmiiboList(); // 刷新背景的主列表
+                    refreshAmiiboList();
                 } else {
                     showToast(`下载失败: ${data.error}`, 'error');
                 }
             } catch(e) {
                 showToast(`请求失败: ${e.message}`, 'error');
             }
+        }
+
+        // ==================== 可折叠树组 ====================
+        
+        // 本地库分组折叠
+        function toggleTreeGroup(headerEl, groupName) {
+            const group = headerEl.closest('.tree-group');
+            const itemsEl = group.querySelector('.tree-group-items');
+            const toggleEl = headerEl.querySelector('.toggle');
+            
+            const isCollapsed = itemsEl.classList.toggle('collapsed');
+            toggleEl.classList.toggle('collapsed', isCollapsed);
+            
+            if (isCollapsed) {
+                itemsEl.style.maxHeight = '0px';
+            } else {
+                // 计算实际内容高度
+                itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
+            }
+            
+            // 持久化折叠状态
+            const state = JSON.parse(localStorage.getItem('amiibo_collapsed_groups') || '{}');
+            state[groupName] = isCollapsed;
+            localStorage.setItem('amiibo_collapsed_groups', JSON.stringify(state));
+        }
+        
+        // 订阅分组折叠
+        function toggleRepoGroup(headerEl, folderName) {
+            const group = headerEl.closest('.tree-group');
+            const itemsEl = group.querySelector('.tree-group-items');
+            const toggleEl = headerEl.querySelector('.toggle');
+            
+            const isCollapsed = itemsEl.classList.toggle('collapsed');
+            toggleEl.classList.toggle('collapsed', isCollapsed);
+            
+            if (isCollapsed) {
+                itemsEl.style.maxHeight = '0px';
+            } else {
+                itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
+            }
+            
+            const state = JSON.parse(localStorage.getItem('repo_collapsed_groups') || '{}');
+            state[folderName] = isCollapsed;
+            localStorage.setItem('repo_collapsed_groups', JSON.stringify(state));
+        }
+        
+        // 全部折叠/展开 (本地库)
+        function collapseAllGroups() {
+            const state = {};
+            document.querySelectorAll('#amiibo-list .tree-group').forEach(g => {
+                const gName = g.dataset.group;
+                const itemsEl = g.querySelector('.tree-group-items');
+                const toggleEl = g.querySelector('.toggle');
+                itemsEl.classList.add('collapsed');
+                itemsEl.style.maxHeight = '0px';
+                toggleEl.classList.add('collapsed');
+                state[gName] = true;
+            });
+            localStorage.setItem('amiibo_collapsed_groups', JSON.stringify(state));
+        }
+        
+        function expandAllGroups() {
+            document.querySelectorAll('#amiibo-list .tree-group').forEach(g => {
+                const itemsEl = g.querySelector('.tree-group-items');
+                const toggleEl = g.querySelector('.toggle');
+                itemsEl.classList.remove('collapsed');
+                itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
+                toggleEl.classList.remove('collapsed');
+            });
+            localStorage.setItem('amiibo_collapsed_groups', '{}');
+        }
+        
+        // 订阅: 批量下载某个文件夹
+        // 缓存最近的 renderRepoFiles 数据以供批量下载使用
+        let _lastRepoFiles = [];
+        
+        async function downloadAllInFolder(folderPath) {
+            // 从缓存找到该文件夹的文件
+            const files = _lastRepoFiles.filter(f => {
+                const parts = f.path.split('/');
+                const fp = parts.length > 1 ? parts.slice(0, -1).join('/') : 'Root';
+                return fp === folderPath;
+            });
+            
+            if (files.length === 0) {
+                showToast('未找到可下载文件', 'error');
+                return;
+            }
+            
+            if (!confirm(`确认下载 "${folderPath}" 下的 ${files.length} 个文件？`)) return;
+            
+            showToast(`开始批量下载 ${files.length} 个文件...`, 'info');
+            let ok = 0, fail = 0;
+            
+            for (const f of files) {
+                try {
+                    const res = await fetch('/api/amiibo/download', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({url: f.url, name: f.name})
+                    });
+                    const data = await res.json();
+                    if (data.success) ok++; else fail++;
+                } catch(e) { fail++; }
+            }
+            
+            showToast(`批量下载完成: ${ok} 成功, ${fail} 失败`, ok > 0 ? 'success' : 'error');
+            if (ok > 0) refreshAmiiboList();
+        }
+        
+        // 订阅文件筛选
+        function filterRepoFiles(query) {
+            if (!_lastRepoFiles.length) return;
+            if (!query) {
+                renderRepoFiles(_lastRepoFiles);
+                return;
+            }
+            const q = query.toLowerCase();
+            const filtered = _lastRepoFiles.filter(f => 
+                f.name.toLowerCase().includes(q) || f.path.toLowerCase().includes(q)
+            );
+            renderRepoFiles(filtered);
+        }
+        
+        // 订阅分组全部折叠/展开
+        function collapseAllRepoGroups() {
+            const state = {};
+            document.querySelectorAll('#repo-content .tree-group').forEach(g => {
+                const folder = g.dataset.repoGroup;
+                const itemsEl = g.querySelector('.tree-group-items');
+                const toggleEl = g.querySelector('.toggle');
+                itemsEl.classList.add('collapsed');
+                itemsEl.style.maxHeight = '0px';
+                toggleEl.classList.add('collapsed');
+                if (folder) state[folder] = true;
+            });
+            localStorage.setItem('repo_collapsed_groups', JSON.stringify(state));
+        }
+        
+        function expandAllRepoGroups() {
+            document.querySelectorAll('#repo-content .tree-group').forEach(g => {
+                const itemsEl = g.querySelector('.tree-group-items');
+                const toggleEl = g.querySelector('.toggle');
+                itemsEl.classList.remove('collapsed');
+                itemsEl.style.maxHeight = itemsEl.scrollHeight + 'px';
+                toggleEl.classList.remove('collapsed');
+            });
+            localStorage.setItem('repo_collapsed_groups', '{}');
         }
 
         // ==================== Amiibo 库管理 ====================
@@ -1918,7 +2262,10 @@
             const q = query.toLowerCase();
             const filtered = allAmiibos.filter(a => 
                 a.filename.toLowerCase().includes(q) ||
-                (a.custom_name || '').toLowerCase().includes(q)
+                (a.custom_name || '').toLowerCase().includes(q) ||
+                (a.character || '').toLowerCase().includes(q) ||
+                (a.series || '').toLowerCase().includes(q) ||
+                (a.game_series || '').toLowerCase().includes(q)
             );
             
             renderAmiiboList(filtered);
@@ -2029,15 +2376,28 @@
                     return a.localeCompare(b, 'zh-CN');
                 });
 
-                // 渲染每个分组
-                list.innerHTML = sortedGroups.map(gName => `
-                    <div class="group-header" style="position:sticky; top:0; background:var(--bg-secondary); padding:6px 8px; z-index:10; border-bottom:1px solid var(--border-color); margin-bottom:4px; font-size:11px; font-weight:bold; color:var(--text-muted); display:flex; align-items:center; border-radius:4px;">
-                        <span style="margin-right:6px;">📂</span> ${gName} <span style="margin-left:auto; font-weight:normal; opacity:0.7; background:var(--bg-card); padding:1px 6px; border-radius:10px; font-size:10px;">${groups[gName].length}</span>
-                    </div>
-                    <div class="group-items" style="margin-bottom:8px;">
-                        ${groups[gName].map(renderItem).join('')}
-                    </div>
-                `).join('');
+                // 渲染每个分组 (可折叠树)
+                // 读取折叠状态
+                const collapsedGroups = JSON.parse(localStorage.getItem('amiibo_collapsed_groups') || '{}');
+                
+                list.innerHTML = sortedGroups.map(gName => {
+                    const isCollapsed = collapsedGroups[gName] === true;
+                    const items = groups[gName];
+                    // 预估高度: 每个 item 约 66px
+                    const maxH = items.length * 72 + 10;
+                    return `
+                    <div class="tree-group" data-group="${gName}">
+                        <div class="tree-group-header" onclick="toggleTreeGroup(this, '${gName.replace(/'/g, "\\'")}')"> 
+                            <span class="toggle ${isCollapsed ? 'collapsed' : ''}">▼</span>
+                            <span class="group-icon">📂</span>
+                            <span class="group-name">${gName}</span>
+                            <span class="group-count">${items.length}</span>
+                        </div>
+                        <div class="tree-group-items ${isCollapsed ? 'collapsed' : ''}" style="max-height:${isCollapsed ? 0 : maxH}px;">
+                            ${items.map(renderItem).join('')}
+                        </div>
+                    </div>`;
+                }).join('');
             } else {
                 // 扁平列表
                 list.innerHTML = amiibos.map(renderItem).join('');
