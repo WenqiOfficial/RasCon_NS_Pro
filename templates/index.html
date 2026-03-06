@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RasCon Ver.2.0 - Pro Controller</title>
     <!-- DaisyUI 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" rel="stylesheet" type="text/css">
+    <link href="/static/css/daisyui-5.5.18.css" rel="stylesheet" type="text/css">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" rel="stylesheet" type="text/css"> -->
     <!-- Tailwind CSS v4 (Browser Runtime — 零构建) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="/static/js/tailwindcss_browser_4.2.1.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
     <!-- 主题配置 -->
     <style type="text/tailwindcss">
     @theme {
@@ -87,8 +89,11 @@
             <div class="left-section flex flex-col h-full min-h-0 max-[1200px]:h-auto">
                 <div class="card bg-base-200 border border-base-300 controller-panel">
                     <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-base-300">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider">Pro Controller <span class="text-[11px] font-normal normal-case tracking-normal text-base-content/30">(WASD=左摇杆 方向键=右摇杆 空格=A 回车=B)</span></h3>
-                        <button onclick="toggleFullscreen()" class="btn btn-ghost btn-xs" title="全屏模式">⛶</button>
+                        <h3 class="text-xs font-semibold uppercase tracking-wider">Pro Controller</h3>
+                        <div class="flex items-center gap-1">
+                            <button onclick="toggleKeybindMode()" id="btn-keybind-mode" class="btn btn-ghost btn-xs" title="键位管理">⌨ 键位管理</button>
+                            <button onclick="toggleFullscreen()" class="btn btn-ghost btn-xs" title="全屏模式">⛶</button>
+                        </div>
                     </div>
                     <div class="controller-grid-container">
                         <div class="controller-grid">
@@ -275,6 +280,27 @@
             <div class="modal-action">
                 <button id="confirm-cancel" class="btn btn-ghost btn-sm">取消</button>
                 <button id="confirm-ok" class="btn btn-primary btn-sm">确定</button>
+            </div>
+        </div>
+        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
+    </dialog>
+
+    <!-- 键位绑定对话框 -->
+    <dialog id="keybind-modal" class="modal">
+        <div class="modal-box max-w-xs">
+            <h3 class="font-bold text-sm mb-2" id="keybind-modal-title">设置键位</h3>
+            <p class="text-xs text-base-content/50 mb-3">按下想要绑定的键盘按键（可加 Shift）</p>
+            <div class="flex items-center justify-center py-6 border border-dashed border-base-300 rounded-lg bg-base-300 mb-3">
+                <span id="keybind-modal-key" class="text-2xl font-mono font-bold text-primary">—</span>
+            </div>
+            <div class="flex items-center gap-2 text-xs text-base-content/40 mb-4">
+                <span>当前:</span>
+                <kbd class="kbd kbd-xs" id="keybind-modal-current">无</kbd>
+            </div>
+            <div class="modal-action">
+                <button id="keybind-unbind" class="btn btn-ghost btn-sm">恢复默认</button>
+                <button id="keybind-cancel" class="btn btn-ghost btn-sm">取消</button>
+                <button id="keybind-ok" class="btn btn-primary btn-sm" disabled>确定</button>
             </div>
         </div>
         <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>

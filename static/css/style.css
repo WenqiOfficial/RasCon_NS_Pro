@@ -114,6 +114,29 @@
     font-size: 13px;
     background: var(--color-neutral);
     color: var(--color-base-content);
+    position: relative;
+}
+
+/* 键位编辑模式 */
+.controller-grid.keybind-mode button {
+    cursor: crosshair;
+}
+
+.controller-grid.keybind-mode button:hover {
+    border-color: var(--color-warning) !important;
+    box-shadow: 0 0 8px rgba(243, 156, 18, 0.3);
+}
+
+.keybind-label {
+    position: absolute;
+    bottom: 1px;
+    right: 3px;
+    font-size: 8px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--color-primary);
+    opacity: 0.85;
+    pointer-events: none;
 }
 
 .controller-grid button:hover:not(:disabled) {

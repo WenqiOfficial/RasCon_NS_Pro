@@ -866,10 +866,10 @@ async function removeCurrentAmiibo() {
     } catch (e) { UI.error(e.message || '移除失败'); }
 }
 
-// ==================== \u6309\u952e\u957f\u6309\u548c\u952e\u76d8\u5feb\u6377\u952e\u652f\u6301 ====================
+// ==================== 键位管理与键盘快捷键 ====================
 
-// 键盘映射配置
-const keyMap = {
+// 默认键盘映射配置
+const DEFAULT_KEY_MAP = {
     // WASD -> 左摇杆
     'KeyW': { type: 'stick', stick: 'ls', direction: 'up' },
     'KeyA': { type: 'stick', stick: 'ls', direction: 'left' },
@@ -903,8 +903,211 @@ const keyMap = {
     'ShiftKeyD': { type: 'button', button: 'right' },
 };
 
+// 从 localStorage 加载自定义映射
+let keyMap = {};
+function loadKeyMap() {
+    keyMap = { ...DEFAULT_KEY_MAP };
+    try {
+        const saved = JSON.parse(localStorage.getItem('rascon_keymap') || '{}');
+        for (const [ctrlBtn, keyCode] of Object.entries(saved)) {
+            for (const k of Object.keys(keyMap)) {
+                const m = keyMap[k];
+                const mBtn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+                if (mBtn === ctrlBtn) delete keyMap[k];
+            }
+            if (!keyCode) continue;
+            delete keyMap[keyCode];
+            const stickMatch = ctrlBtn.match(/^(ls|rs) (up|down|left|right)$/);
+            if (stickMatch) {
+                keyMap[keyCode] = { type: 'stick', stick: stickMatch[1], direction: stickMatch[2] };
+            } else {
+                keyMap[keyCode] = { type: 'button', button: ctrlBtn };
+            }
+        }
+    } catch (e) { /* ignore */ }
+}
+loadKeyMap();
+
+function saveCustomKeyMap() {
+    const custom = {};
+    const defaultByBtn = {};
+    for (const [k, m] of Object.entries(DEFAULT_KEY_MAP)) {
+        const btn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+        defaultByBtn[btn] = k;
+    }
+    const currentByBtn = {};
+    for (const [k, m] of Object.entries(keyMap)) {
+        const btn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+        currentByBtn[btn] = k;
+    }
+    const allBtns = new Set([...Object.keys(defaultByBtn), ...Object.keys(currentByBtn)]);
+    for (const btn of allBtns) {
+        if (defaultByBtn[btn] !== currentByBtn[btn]) {
+            custom[btn] = currentByBtn[btn] || '';
+        }
+    }
+    if (Object.keys(custom).length === 0) {
+        localStorage.removeItem('rascon_keymap');
+    } else {
+        localStorage.setItem('rascon_keymap', JSON.stringify(custom));
+    }
+}
+
+// ==================== 键位编辑模式 ====================
+let isKeybindMode = false;
+
+function toggleKeybindMode() {
+    isKeybindMode = !isKeybindMode;
+    const btn = document.getElementById('btn-keybind-mode');
+    const grid = document.querySelector('.controller-grid');
+    if (isKeybindMode) {
+        btn.classList.add('btn-active');
+        grid.classList.add('keybind-mode');
+        showKeybindLabels(true);
+        UI.info('键位编辑模式：点击控制器按钮修改绑定');
+    } else {
+        btn.classList.remove('btn-active');
+        grid.classList.remove('keybind-mode');
+        showKeybindLabels(false);
+    }
+}
+
+function showKeybindLabels(show) {
+    document.querySelectorAll('.controller-grid button[data-btn]').forEach(btn => {
+        const existing = btn.querySelector('.keybind-label');
+        if (existing) existing.remove();
+        if (!show) return;
+        const btnValue = btn.getAttribute('data-btn');
+        const keyCode = findKeyForButton(btnValue);
+        const label = document.createElement('span');
+        label.className = 'keybind-label';
+        label.textContent = keyCode ? formatKeyCode(keyCode) : '—';
+        btn.appendChild(label);
+    });
+}
+
+function findKeyForButton(btnValue) {
+    const normalized = btnValue.replace(/,\d+$/, '');
+    for (const [keyCode, m] of Object.entries(keyMap)) {
+        const mBtn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+        if (mBtn === normalized) return keyCode;
+    }
+    return null;
+}
+
+function formatKeyCode(code) {
+    const shift = code.startsWith('Shift') && code !== 'ShiftLeft' && code !== 'ShiftRight';
+    let key = shift ? code.slice(5) : code;
+    const map = {
+        'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
+        'BracketLeft': '[', 'BracketRight': ']', 'Equal': '=', 'Minus': '-',
+        'Comma': ',', 'Period': '.', 'Space': '␣', 'Enter': '⏎',
+        'Backquote': '`', 'Slash': '/', 'Backslash': '\\', 'Semicolon': ';', 'Quote': "'",
+    };
+    if (map[key]) key = map[key];
+    else key = key.replace('Key', '').replace('Digit', '');
+    return shift ? `⇧${key}` : key;
+}
+
+function openKeybindDialog(btnElement) {
+    const btnValue = btnElement.getAttribute('data-btn');
+    const normalized = btnValue.replace(/,\d+$/, '');
+    const modal = document.getElementById('keybind-modal');
+    const titleEl = document.getElementById('keybind-modal-title');
+    const keyEl = document.getElementById('keybind-modal-key');
+    const currentEl = document.getElementById('keybind-modal-current');
+    const okBtn = document.getElementById('keybind-ok');
+    const cancelBtn = document.getElementById('keybind-cancel');
+    const unbindBtn = document.getElementById('keybind-unbind');
+
+    const btnLabel = btnElement.childNodes[0].textContent.trim();
+    titleEl.textContent = `设置「${btnLabel}」的键位`;
+    const currentKey = findKeyForButton(btnValue);
+    currentEl.textContent = currentKey ? formatKeyCode(currentKey) : '无';
+    keyEl.textContent = '—';
+    okBtn.disabled = true;
+
+    let pendingKeyCode = null;
+
+    const onKeyDown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.code === 'Escape') return;
+        if (e.code.startsWith('Shift')) return;
+        const code = (e.shiftKey ? 'Shift' : '') + e.code;
+        pendingKeyCode = code;
+        keyEl.textContent = formatKeyCode(code);
+        okBtn.disabled = false;
+    };
+
+    const cleanup = () => {
+        document.removeEventListener('keydown', onKeyDown, true);
+        okBtn.removeEventListener('click', onOk);
+        cancelBtn.removeEventListener('click', onCancel);
+        unbindBtn.removeEventListener('click', onUnbind);
+        modal.removeEventListener('close', onBackdrop);
+        modal.close();
+    };
+
+    const onOk = () => {
+        if (pendingKeyCode) {
+            delete keyMap[pendingKeyCode];
+            for (const k of Object.keys(keyMap)) {
+                const m = keyMap[k];
+                const mBtn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+                if (mBtn === normalized) { delete keyMap[k]; break; }
+            }
+            const stickMatch = normalized.match(/^(ls|rs) (up|down|left|right)$/);
+            if (stickMatch) {
+                keyMap[pendingKeyCode] = { type: 'stick', stick: stickMatch[1], direction: stickMatch[2] };
+            } else {
+                keyMap[pendingKeyCode] = { type: 'button', button: normalized };
+            }
+            saveCustomKeyMap();
+            showKeybindLabels(true);
+            UI.success(`已绑定 ${formatKeyCode(pendingKeyCode)} → ${btnLabel}`);
+        }
+        cleanup();
+    };
+
+    const onUnbind = () => {
+        // 移除当前绑定
+        for (const k of Object.keys(keyMap)) {
+            const m = keyMap[k];
+            const mBtn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+            if (mBtn === normalized) { delete keyMap[k]; break; }
+        }
+        // 恢复该按钮的默认绑定
+        for (const [k, m] of Object.entries(DEFAULT_KEY_MAP)) {
+            const mBtn = m.type === 'stick' ? `${m.stick} ${m.direction}` : m.button;
+            if (mBtn === normalized) {
+                delete keyMap[k]; // 清除该键码上可能的其他绑定
+                keyMap[k] = { ...m };
+                break;
+            }
+        }
+        saveCustomKeyMap();
+        showKeybindLabels(true);
+        UI.info(`已恢复「${btnLabel}」的默认键位`);
+        cleanup();
+    };
+
+    const onCancel = () => cleanup();
+    const onBackdrop = () => cleanup();
+
+    document.addEventListener('keydown', onKeyDown, true);
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+    unbindBtn.addEventListener('click', onUnbind);
+    modal.addEventListener('close', onBackdrop);
+    modal.showModal();
+}
+
 // 当前按下的键
 const pressedKeys = new Set();
+const PREVENT_DEFAULT_KEYS = new Set([
+    'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Tab'
+]);
 
 // 发送按键命令 (高频调用，静默失败)
 async function sendButton(action, button) {
@@ -917,12 +1120,17 @@ async function sendButton(action, button) {
 
 // 处理鼠标/触摸按下
 function handleButtonPress(button, buttonValue) {
+    if (isKeybindMode) {
+        openKeybindDialog(button);
+        return;
+    }
     button.classList.add('pressed');
     sendButton('press', buttonValue);
 }
 
 // 处理鼠标/触摸释放
 function handleButtonRelease(button, buttonValue) {
+    if (isKeybindMode) return;
     button.classList.remove('pressed');
     sendButton('release', buttonValue);
 }
@@ -969,10 +1177,15 @@ button.addEventListener('touchend', (e) => {
 function handleKeyDown(e) {
     // 如果在输入框中，不处理快捷键
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    // 键位编辑模式下不走游戏输入
+    if (isKeybindMode) return;
 
-    const keyCode = (e.shiftKey ? 'Shift' : '') + e.code;
+    const keyCode = (e.shiftKey && !e.code.startsWith('Shift') ? 'Shift' : '') + e.code;
     const mapping = keyMap[keyCode] || keyMap[e.code];
     
+    // 始终阻止会触发页面滚动的按键默认行为
+    if (PREVENT_DEFAULT_KEYS.has(e.code)) e.preventDefault();
+
     if (mapping && !pressedKeys.has(keyCode)) {
 e.preventDefault();
 pressedKeys.add(keyCode);
@@ -988,10 +1201,11 @@ if (mapping.type === 'button') {
 }
 
 function handleKeyUp(e) {
-    const keyCode = (e.shiftKey ? 'Shift' : '') + e.code;
-    const mapping = keyMap[keyCode] || keyMap[e.code];
+    if (isKeybindMode) return;
+    if (PREVENT_DEFAULT_KEYS.has(e.code)) e.preventDefault();
     
     // 检查所有可能的键码
+    const keyCode = (e.shiftKey && !e.code.startsWith('Shift') ? 'Shift' : '') + e.code;
     [keyCode, e.code, 'Shift' + e.code].forEach(code => {
 if (pressedKeys.has(code)) {
     pressedKeys.delete(code);
