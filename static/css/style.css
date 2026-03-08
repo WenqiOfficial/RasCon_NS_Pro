@@ -68,3 +68,162 @@
     --depth: 0;
     --noise: 0;
 }
+
+/* ============================
+ * 全局过渡动画与细节优化
+ * ============================ */
+
+/* Modal 进出动画 (JS 控制 .modal-closing 类实现退场) */
+dialog.modal {
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease, background-color 0.3s ease;
+    backdrop-filter: blur(0px);
+    background-color: transparent !important;
+}
+dialog.modal::backdrop {
+    background-color: transparent !important;
+}
+dialog.modal[open] {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    background-color: oklch(var(--b1) / 0.5) !important;
+}
+dialog.modal[open].modal-closing {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    background-color: transparent !important;
+}
+
+dialog.modal .modal-box {
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+}
+dialog.modal[open] .modal-box {
+    transform: scale(1);
+    opacity: 1;
+}
+dialog.modal[open].modal-closing .modal-box {
+    transform: scale(0.9) translateY(15px);
+    opacity: 0;
+}
+
+/* 修复遮罩层鼠标手型 */
+.modal-backdrop, .modal-backdrop button {
+    cursor: default !important;
+}
+
+/* 表单输入框焦点增强与动画 */
+.input, .textarea {
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 按钮通用丝滑过渡增强 */
+.btn {
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-duration: 0.2s;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn:active {
+    transform: scale(0.95);
+}
+
+/* ============================
+ * 全屏沉浸式控制器模式
+ * ============================ */
+:fullscreen {
+    background-color: oklch(var(--b1));
+    overflow: hidden !important;
+    touch-action: none !important;
+    overscroll-behavior: none !important;
+}
+:fullscreen html, :fullscreen body {
+    overflow: hidden !important;
+    touch-action: none !important;
+    overscroll-behavior: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+}
+/* 全屏时隐藏顶部 Header 和底部版权 */
+:fullscreen header,
+:fullscreen footer {
+    display: none !important;
+}
+/* 全屏时隐藏右侧的 Amiibo / 脚本 状态栏区域 */
+:fullscreen .max-w-\[1440px\] > .flex > div:last-child {
+    display: none !important;
+}
+/* 全屏时隐藏控制器本身的标题栏（仅显示纯粹的手柄） */
+:fullscreen .max-w-\[1440px\] > .flex > div:first-child > div > div.flex-none {
+    display: none !important;
+}
+/* 彻底切断桌面端的滚动条条与尺寸溢出 */
+:fullscreen .max-w-\[1440px\] > .flex > div:first-child,
+:fullscreen .max-w-\[1440px\] > .flex > div:first-child > div,
+:fullscreen .max-w-\[1440px\] > .flex > div:first-child > div > .flex-1 {
+    overflow: hidden !important;
+}
+/* 调整主容器全屏沾满，并锁死溢出 */
+:fullscreen .max-w-\[1440px\] {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+}
+:fullscreen .max-w-\[1440px\] > .flex {
+    flex: 1;
+    width: 100vw !important;
+    height: 100dvh !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+/* 移除控制器容器边框与圆角，使其无缝填充，同时切断内部溢出 */
+:fullscreen .max-w-\[1440px\] > .flex > div:first-child {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    overflow: hidden !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+/* 全屏手柄布局自适应（针对横竖屏及尺寸完美分离） */
+:fullscreen .controller-grid {
+    transform-origin: center center;
+    box-sizing: border-box !important;
+}
+@media (orientation: landscape) {
+    :fullscreen .controller-grid { 
+        width: 100% !important; 
+        height: 100% !important; /* 充分利用全屏高度 */
+        max-width: 1400px !important; 
+        max-height: 100vh !important;
+        margin: 0 auto; 
+        /* 将间距下限调低为 45px 避免拥挤手机越界，上限保留 80px，彻底废除硬性宽度 */
+        grid-template-columns: minmax(45px, 80px) minmax(45px, 80px) minmax(45px, 80px) 1fr minmax(45px, 80px) minmax(45px, 80px) minmax(45px, 80px) !important;
+        /* 肩键和功能键按比例缩小，重点区域放大保障不溢出 */
+        grid-template-rows: 0.7fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr !important;
+        padding-left: max(env(safe-area-inset-left, 6vw), 4vw) !important;
+        padding-right: max(env(safe-area-inset-right, 6vw), 4vw) !important;
+        padding-top: 2vw !important;
+        padding-bottom: 2vw !important;
+        transform: scale(0.98); /* 不再需要大量的强行缩小补丁，因为流体和下限限制足以适配 */
+    }
+}
+@media (max-width: 600px) and (orientation: portrait) {
+    /* 手机竖屏全屏模式 */
+    :fullscreen .controller-grid { 
+        width: 100% !important;
+        height: 100% !important;
+        max-width: 100% !important;
+        padding: 4vw !important;
+        grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+        grid-template-rows: 0.7fr 0.6fr 1fr 1fr 1fr 1fr 1fr 1fr 0.6fr !important;
+        transform: scale(0.95); 
+    }
+}
+

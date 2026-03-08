@@ -1,26 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN" data-theme="dracula">
 <head>
     <meta charset="UTF-8">
-    <title>动森巴列岛批量刷amiibo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动森巴列岛批量刷 Amiibo</title>
+    <link href="/static/css/daisyui-5.5.18.css" rel="stylesheet" type="text/css">
+    <link href="/static/css/style.css" rel="stylesheet" type="text/css">
+    <script src="/static/js/tailwindcss_browser_4.2.1.js"></script>
+    <script>try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 </head>
-<body>
-    <h1 style="margin-bottom:0;">动森巴列岛批量刷amiibo</h1></div>
-<div id="content" style="background-color:#EEEEEE;">  
-    <p>上传Amiibo压缩包(仅限zip格式)</p>
-    <p>上传成功后，跳转回去检查脚本是否正确，即可点击RUN开始批量刷amiibo</p>
-    <br>
-    <p>由于个别小动物召唤时间较长，脚本刷amiibo平均时间设定的较长。</p> 
-    <p>出现小动物已召唤的提示为正常现象</p>
-    <p>亲测连刷40个amiibo没有出现问题</p> 
-    <form action="/amiibos" id="upload-form" action="upload.php" method="POST" enctype="multipart/form-data">
-        <input type="file" id="upload" name="file" />
-        <input type="submit" value="生成脚本" style="width:100px;height:25px;"/>
-        <p>※之前上传的amiibo文件将会全部清空</p> 
-    </form>
-    <br>
-    <p>{{msg}}</p>
-    <form action="/"><button>跳转去运行脚本</button></form>   
-</div> 
+<body class="min-h-screen bg-base-100 text-base-content font-sans antialiased flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg bg-base-200 shadow-xl border border-base-content/10">
+        <div class="card-body">
+            <h2 class="card-title text-xl mb-2">动森巴列岛批量刷 Amiibo</h2>
+            
+            <div class="bg-base-100 p-4 rounded-xl text-sm opacity-80 mb-4 space-y-2 border border-base-content/5">
+                <p>1. 上传 Amiibo 压缩包 <strong>(仅限 .zip 格式)</strong>。</p>
+                <p>2. 上传成功后，跳转回主页检查脚本是否正确，即可点击 <strong>运行</strong> 开始批量刷入。</p>
+                <div class="divider my-1"></div>
+                <p class="text-warning">由于个别小动物召唤时间较长，脚本刷 Amiibo 平均时间设定得比较长。</p>
+                <p>💡 出现“小动物已召唤”的提示为正常现象，亲测连刷40个没有出现问题。</p>
+                <p class="text-error font-bold mt-2">※ 警告：上传新包后，之前上传的 Amiibo 文件将会被全部清空！</p>
+            </div>
+            
+            <form action="/amiibos" method="POST" enctype="multipart/form-data" class="flex flex-col gap-4">
+                <input type="file" name="file" accept=".zip" class="file-input file-input-bordered file-input-primary w-full" required />
+                <button type="submit" class="btn btn-primary w-full">上传并生成脚本</button>
+            </form>
+
+            {% if msg %}
+            <div class="mt-4 alert alert-info py-2 shadow-sm rounded-lg text-sm">
+                <span>{{ msg }}</span>
+            </div>
+            {% endif %}
+
+            <div class="divider">或</div>
+            <div class="card-actions justify-center">
+                <a href="/" class="btn btn-ghost">返回主控制台</a>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -48,6 +48,23 @@
     </style>
 </head>
 <body class="min-h-screen bg-base-100 text-base-content font-sans antialiased selection:bg-primary/30 lg:h-screen lg:overflow-hidden">
+    <!-- UI Macros for Controller Buttons -->
+    {% macro btn_shoulder(btn, pos_class, label) %}
+    <button data-btn="{{ btn }}" class="{{ pos_class }} btn min-h-0 h-11 lg:h-12 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-sm lg:text-base font-bold rounded-xl shadow-sm transition-all duration-150">{{ label }}</button>
+    {% endmacro %}
+
+    {% macro btn_system(btn, pos_class, content, title='', extra_class='text-base-content/80 font-black text-xl') %}
+    <button data-btn="{{ btn }}" class="{{ pos_class }} btn btn-circle min-h-0 w-10 h-10 lg:w-11 lg:h-11 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 {{ extra_class }} shadow-sm transition-all duration-150" {% if title %}title="{{ title }}"{% endif %}>{{ content|safe }}</button>
+    {% endmacro %}
+
+    {% macro btn_action(btn, pos_class, label, text_class='font-bold text-lg lg:text-xl text-base-content/80') %}
+    <button data-btn="{{ btn }}" class="absolute {{ pos_class }} z-10 btn btn-circle min-h-0 w-12 h-12 lg:w-14 lg:h-14 bg-base-200 border border-base-content/10 hover:bg-base-300 {{ text_class }} shadow-sm transition-all duration-150">{{ label|safe }}</button>
+    {% endmacro %}
+
+    {% macro btn_stick_dir(btn, pos_class, label) %}
+    <button data-btn="{{ btn }}" class="absolute {{ pos_class }} z-10 btn btn-circle min-h-0 w-8 h-8 lg:w-9 lg:h-9 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-sm shadow-sm">{{ label }}</button>
+    {% endmacro %}
+
     <!-- SVG Icon Sprite — Lucide Icons (https://lucide.dev) MIT License -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
       <symbol id="i-gamepad" viewBox="0 0 24 24"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12" stroke-width="3"/><line x1="18" y1="10" x2="18.01" y2="10" stroke-width="3"/><path d="M17.32 5H6.68a4 4 0 00-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 003 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 019.828 16h4.344a2 2 0 011.414.586L17 18c.5.5 1 1 2 1a3 3 0 003-3c0-1.545-.604-6.584-.685-7.258a4.5 4.5 0 00-.017-.151A4 4 0 0017.32 5z"/></symbol>
@@ -129,20 +146,20 @@
                     <div class="flex-1 flex items-center justify-center p-3 lg:p-6 overflow-y-auto">
                         <div class="grid grid-cols-7 grid-rows-9 gap-1 lg:gap-1.5 w-full max-w-[420px] lg:max-w-[520px] controller-grid select-none">
                             <!-- R1: 肩键 -->
-                            <button data-btn="zl" class="row-start-1 col-start-1 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">ZL</button>
-                            <button data-btn="l" class="row-start-1 col-start-2 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">L</button>
-                            <button data-btn="r" class="row-start-1 col-start-6 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">R</button>
-                            <button data-btn="zr" class="row-start-1 col-start-7 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">ZR</button>
+                            {{ btn_shoulder('zl', 'row-start-1 col-start-1', 'ZL') }}
+                            {{ btn_shoulder('l', 'row-start-1 col-start-2', 'L') }}
+                            {{ btn_shoulder('r', 'row-start-1 col-start-6', 'R') }}
+                            {{ btn_shoulder('zr', 'row-start-1 col-start-7', 'ZR') }}
                             <!-- R2: +/- -->
-                            <button data-btn="minus" class="row-start-2 col-start-3 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-black text-lg shadow-sm transition-all duration-150">-</button>
-                            <button data-btn="plus" class="row-start-2 col-start-5 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-black text-lg shadow-sm transition-all duration-150">+</button>
+                            {{ btn_system('minus', 'row-start-2 col-start-3', '-') }}
+                            {{ btn_system('plus', 'row-start-2 col-start-5', '+') }}
                             <!-- Right: ABXY Area -->
                             <div class="row-start-3 row-end-6 col-start-5 col-end-8 flex items-center justify-center relative w-full h-full">
-                                <div class="relative w-[116px] h-[116px] lg:w-[136px] lg:h-[136px]">
-                                    <button data-btn="x" class="absolute top-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">X</button>
-                                    <button data-btn="y" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">Y</button>
-                                    <button data-btn="a" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">A</button>
-                                    <button data-btn="b" class="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">B</button>
+                                <div class="relative w-[130px] h-[130px] lg:w-[150px] lg:h-[150px]">
+                                    {{ btn_action('x', 'top-0 left-1/2 -translate-x-1/2', 'X') }}
+                                    {{ btn_action('y', 'left-0 top-1/2 -translate-y-1/2', 'Y') }}
+                                    {{ btn_action('a', 'right-0 top-1/2 -translate-y-1/2', 'A') }}
+                                    {{ btn_action('b', 'bottom-0 left-1/2 -translate-x-1/2', 'B') }}
                                 </div>
                             </div>
                             
@@ -150,17 +167,17 @@
                             <div class="row-start-3 row-end-6 col-start-1 col-end-4 flex items-center justify-center relative w-full h-full">
                                 <div data-stick="ls" class="joystick-zone flex items-center justify-center w-full h-full relative">
                                     <!-- Base with outline -->
-                                    <div class="joystick-base w-[88px] h-[88px] lg:w-[104px] lg:h-[104px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
+                                    <div class="joystick-base w-[100px] h-[100px] lg:w-[116px] lg:h-[116px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
                                         <!-- Knob -->
-                                        <div class="joystick-knob w-9 h-9 lg:w-11 lg:h-11 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="l_stick">
+                                        <div class="joystick-knob w-11 h-11 lg:w-14 lg:h-14 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="l_stick">
                                             <div class="w-2 h-2 rounded-full bg-base-content/20 pointer-events-none"></div>
                                         </div>
                                         
                                         <!-- Surround Buttons -->
-                                        <button data-btn="ls up,100" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↑</button>
-                                        <button data-btn="ls left,100" class="absolute left-[-12px] top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">←</button>
-                                        <button data-btn="ls right,100" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">→</button>
-                                        <button data-btn="ls down,100" class="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↓</button>
+                                        {{ btn_stick_dir('ls up,100', '-top-3 left-1/2 -translate-x-1/2', '↑') }}
+                                        {{ btn_stick_dir('ls left,100', 'left-[-12px] top-1/2 -translate-y-1/2', '←') }}
+                                        {{ btn_stick_dir('ls right,100', '-right-3 top-1/2 -translate-y-1/2', '→') }}
+                                        {{ btn_stick_dir('ls down,100', '-bottom-3 left-1/2 -translate-x-1/2', '↓') }}
                                     </div>
                                 </div>
                             </div>
@@ -168,31 +185,31 @@
                             <!-- Right Stick Area -->
                             <div class="row-start-6 row-end-9 col-start-5 col-end-8 flex items-center justify-center relative w-full h-full">
                                 <div data-stick="rs" class="joystick-zone flex items-center justify-center w-full h-full relative">
-                                    <div class="joystick-base w-[88px] h-[88px] lg:w-[104px] lg:h-[104px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
-                                        <div class="joystick-knob w-9 h-9 lg:w-11 lg:h-11 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="r_stick">
+                                    <div class="joystick-base w-[100px] h-[100px] lg:w-[116px] lg:h-[116px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
+                                        <div class="joystick-knob w-11 h-11 lg:w-14 lg:h-14 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="r_stick">
                                             <div class="w-2 h-2 rounded-full bg-base-content/20 pointer-events-none"></div>
                                         </div>
                                         
-                                        <button data-btn="rs up,100" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↑</button>
-                                        <button data-btn="rs left,100" class="absolute left-[-12px] top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">←</button>
-                                        <button data-btn="rs right,100" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">→</button>
-                                        <button data-btn="rs down,100" class="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↓</button>
+                                        {{ btn_stick_dir('rs up,100', '-top-3 left-1/2 -translate-x-1/2', '↑') }}
+                                        {{ btn_stick_dir('rs left,100', 'left-[-12px] top-1/2 -translate-y-1/2', '←') }}
+                                        {{ btn_stick_dir('rs right,100', '-right-3 top-1/2 -translate-y-1/2', '→') }}
+                                        {{ btn_stick_dir('rs down,100', '-bottom-3 left-1/2 -translate-x-1/2', '↓') }}
                                     </div>
                                 </div>
                             </div>
 
                             <!-- D-Pad Area -->
                             <div class="row-start-6 row-end-9 col-start-1 col-end-4 flex items-center justify-center relative w-full h-full">
-                                <div class="relative w-[116px] h-[116px] lg:w-[136px] lg:h-[136px]">
-                                    <button data-btn="up" class="absolute top-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▲</button>
-                                    <button data-btn="left" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">◀</button>
-                                    <button data-btn="right" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▶</button>
-                                    <button data-btn="down" class="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▼</button>
+                                <div class="relative w-[130px] h-[130px] lg:w-[150px] lg:h-[150px]">
+                                    {{ btn_action('up', 'top-0 left-1/2 -translate-x-1/2', '▲', 'text-base lg:text-lg text-base-content/70') }}
+                                    {{ btn_action('left', 'left-0 top-1/2 -translate-y-1/2', '◀', 'text-base lg:text-lg text-base-content/70') }}
+                                    {{ btn_action('right', 'right-0 top-1/2 -translate-y-1/2', '▶', 'text-base lg:text-lg text-base-content/70') }}
+                                    {{ btn_action('down', 'bottom-0 left-1/2 -translate-x-1/2', '▼', 'text-base lg:text-lg text-base-content/70') }}
                                 </div>
                             </div>
                             <!-- R9: Capture / Home -->
-                            <button data-btn="capture" class="row-start-9 col-start-3 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/60 shadow-sm transition-all duration-150" title="Capture"><svg class="icon w-4 h-4"><use href="#i-camera"/></svg></button>
-                            <button data-btn="home" class="row-start-9 col-start-5 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/60 shadow-sm transition-all duration-150" title="Home"><svg class="icon w-4 h-4"><use href="#i-home"/></svg></button>
+                            {{ btn_system('capture', 'row-start-9 col-start-3', '<svg class="icon w-4 h-4"><use href="#i-camera"/></svg>', 'Capture', 'text-base-content/60') }}
+                            {{ btn_system('home', 'row-start-9 col-start-5', '<svg class="icon w-4 h-4"><use href="#i-home"/></svg>', 'Home', 'text-base-content/60') }}
                         </div>
                     </div>
                 </div>
@@ -202,9 +219,11 @@
             <div class="flex flex-col gap-3 min-h-0 overflow-hidden lg:w-[540px] lg:flex-none">
                 <!-- Amiibo Panel (Tabbed) -->
                 <div class="card bg-base-200/50 border border-base-content/10 rounded-2xl lg:rounded-3xl shadow-sm p-3 lg:p-4 min-h-[360px] lg:min-h-0 lg:flex-1 flex flex-col overflow-hidden">
-                    <div role="tablist" class="tabs tabs-box tabs-sm mb-3">
-                        <button role="tab" class="tab tab-active" id="tab-library" onclick="switchAmiiboTab('library')"><svg class="icon w-3.5 h-3.5"><use href="#i-archive"/></svg> 本地库</button>
-                        <button role="tab" class="tab" id="tab-subscription" onclick="switchAmiiboTab('subscription')"><svg class="icon w-3.5 h-3.5"><use href="#i-globe"/></svg> 在线订阅</button>
+                    <div class="flex justify-start mb-3">
+                        <div role="tablist" class="tabs tabs-box tabs-sm">
+                            <button role="tab" class="tab tab-active transition-colors duration-200" id="tab-library" onclick="switchAmiiboTab('library')"><svg class="icon w-3.5 h-3.5"><use href="#i-archive"/></svg> 本地库</button>
+                            <button role="tab" class="tab transition-colors duration-200" id="tab-subscription" onclick="switchAmiiboTab('subscription')"><svg class="icon w-3.5 h-3.5"><use href="#i-globe"/></svg> 在线订阅</button>
+                        </div>
                     </div>
 
                     <!-- View: Library -->
@@ -368,7 +387,7 @@
                 <button id="confirm-ok" class="btn btn-primary flex-1 rounded-xl">确定</button>
             </div>
         </div>
-        <form method="dialog" class="modal-backdrop bg-base-100/50 backdrop-blur-sm"><button type="button">close</button></form>
+        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
     </dialog>
 
     <!-- 键位绑定对话框 -->
@@ -389,7 +408,7 @@
                 <button id="keybind-ok" class="btn btn-primary flex-[2] rounded-xl text-[13px]" disabled>绑定按键</button>
             </div>
         </div>
-        <form method="dialog" class="modal-backdrop bg-base-100/50 backdrop-blur-sm"><button type="button">close</button></form>
+        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
     </dialog>
 
     <!-- 服务端数据注入 -->

@@ -42,6 +42,34 @@ const api = {
     post(url, body, opts) { return this.request(url, { ...opts, method: 'POST', body }); },
 };
 
+// ==================== Modal 动画关闭 ====================
+function closeModal(dialog) {
+    if (!dialog.open || dialog.classList.contains('modal-closing')) return;
+    dialog.classList.add('modal-closing');
+    const done = () => {
+        dialog.classList.remove('modal-closing');
+        dialog.close();
+    };
+    dialog.addEventListener('transitionend', function handler(e) {
+        if (e.target === dialog) {
+            dialog.removeEventListener('transitionend', handler);
+            done();
+        }
+    });
+    // 兜底：防止 transitionend 不触发
+    setTimeout(done, 350);
+}
+
+// 拦截所有 modal-backdrop 的 form[method=dialog] 提交，改用动画关闭
+document.addEventListener('submit', e => {
+    const form = e.target;
+    if (form.getAttribute('method') === 'dialog' && form.classList.contains('modal-backdrop')) {
+        e.preventDefault();
+        const dialog = form.closest('dialog');
+        if (dialog) closeModal(dialog);
+    }
+}, true);
+
 // ==================== DaisyUI Toast 通知 ====================
 const UI = {
     _el: null,
@@ -82,7 +110,7 @@ function confirmDialog(message) {
         msgEl.textContent = message;
 
         const cleanup = result => {
-            modal.close();
+            closeModal(modal);
             okBtn.removeEventListener('click', onOk);
             cancelBtn.removeEventListener('click', onCancel);
             modal.removeEventListener('close', onBackdrop);
@@ -164,8 +192,18 @@ async function withLoading(btnOrId, asyncFn) {
 
 function toggleFullscreen() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+        document.documentElement.requestFullscreen().then(() => {
+            // 移动端全屏时尝试锁定为横屏，提供最优手柄体验
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch((e) => {
+                    console.log('部分设备不支持自动旋转锁定或需手动同意:', e);
+                });
+            }
+        }).catch(() => {});
     } else {
+        if (screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
         document.exitFullscreen();
     }
 }
@@ -997,8 +1035,8 @@ function showKeybindLabels(show) {
         
         if (!label) {
             label = document.createElement('span');
-            // Using a crisp native border instead of a blurry ring, and shifting the badge slightly inward to avoid intersecting with adjacent button elements 
-            label.className = 'keybind-label pointer-events-none absolute bottom-0 right-[-2px] text-[10px] font-bold bg-primary text-primary-content border-2 border-base-100 px-1 py-[1px] min-w-[20px] rounded-lg shadow-md leading-none text-center z-50 font-mono transition-all duration-300 ease-out opacity-0 scale-50 inline-flex items-center justify-center';
+            // 回归半透明且无主题色的性冷淡/玻璃态风格，移除高亮 primary 色
+            label.className = 'keybind-label pointer-events-none absolute bottom-0 right-[-2px] text-[10px] font-bold bg-base-content/70 text-base-100 backdrop-blur-sm border border-base-100/30 px-1.5 py-[2px] min-w-[20px] rounded-lg shadow-sm leading-none text-center z-50 font-mono transition-all duration-300 ease-out opacity-0 scale-50 inline-flex items-center justify-center';
             btn.appendChild(label);
         }
         
@@ -1089,7 +1127,7 @@ function openKeybindDialog(btnElement) {
         cancelBtn.removeEventListener('click', onCancel);
         unbindBtn.removeEventListener('click', onUnbind);
         modal.removeEventListener('close', onBackdrop);
-        modal.close();
+        closeModal(modal);
     };
 
     const onOk = () => {
@@ -1245,15 +1283,15 @@ function initJoysticks() {
         let currentDir = null;
         let moved = false;
         let targetWasKnob = false;
+        let activeTouchId = null;
 
         function getOffset(e) {
             const rect = base.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
             const maxR = rect.width / 2 - knob.offsetWidth / 2;
-            const pt = e.touches ? e.touches[0] : e;
-            let dx = pt.clientX - cx;
-            let dy = pt.clientY - cy;
+            let dx = e.clientX - cx;
+            let dy = e.clientY - cy;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist > maxR) { dx = dx / dist * maxR; dy = dy / dist * maxR; }
             return { dx, dy, dist, maxR };
@@ -1269,8 +1307,27 @@ function initJoysticks() {
             return 'left';
         }
 
-        function handleMove(e) {
-            if (!dragging) return;
+        base.addEventListener('pointerdown', (e) => {
+            if (isKeybindMode) {
+                const btnEl = e.target.closest('[data-btn]');
+                if (btnEl) { e.preventDefault(); e.stopPropagation(); openKeybindDialog(btnEl); }
+                return;
+            }
+            if (e.target.closest('button')) return;
+            
+            // Allow primary touch/mouse only
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+            e.preventDefault();
+            base.setPointerCapture(e.pointerId);
+            dragging = true;
+            moved = false;
+            targetWasKnob = e.target.closest('.joystick-knob') !== null;
+            knob.classList.add('dragging');
+        });
+
+        base.addEventListener('pointermove', (e) => {
+            if (!dragging || !base.hasPointerCapture(e.pointerId)) return;
             e.preventDefault();
             moved = true;
             const { dx, dy, maxR } = getOffset(e);
@@ -1287,11 +1344,13 @@ function initJoysticks() {
                 }
                 currentDir = newDir;
             }
-        }
+        });
 
-        function handleEnd() {
-            if (!dragging) return;
+        function handleEnd(e) {
+            if (!dragging || !base.hasPointerCapture(e.pointerId)) return;
+            base.releasePointerCapture(e.pointerId);
             dragging = false;
+            
             if (currentDir) {
                 sendButton('release', `${stick} ${currentDir},100`);
                 highlightStick(stick, currentDir, false);
@@ -1308,43 +1367,10 @@ function initJoysticks() {
             knob.style.transform = '';
             knob.classList.remove('dragging');
             moved = false;
-            document.removeEventListener('mousemove', handleMove);
-            document.removeEventListener('mouseup', handleEnd);
-            document.removeEventListener('touchmove', handleMove);
-            document.removeEventListener('touchend', handleEnd);
         }
 
-        base.addEventListener('mousedown', (e) => {
-            if (isKeybindMode) {
-                const btnEl = e.target.closest('[data-btn]');
-                if (btnEl) { e.preventDefault(); e.stopPropagation(); openKeybindDialog(btnEl); }
-                return;
-            }
-            if (e.target.closest('button')) return;
-            e.preventDefault();
-            dragging = true;
-            moved = false;
-            targetWasKnob = e.target.closest('.joystick-knob') !== null;
-            knob.classList.add('dragging');
-            document.addEventListener('mousemove', handleMove);
-            document.addEventListener('mouseup', handleEnd);
-        });
-
-        base.addEventListener('touchstart', (e) => {
-            if (isKeybindMode) {
-                const btnEl = e.target.closest('[data-btn]');
-                if (btnEl) { e.preventDefault(); e.stopPropagation(); openKeybindDialog(btnEl); }
-                return;
-            }
-            if (e.target.closest('button')) return;
-            e.preventDefault();
-            dragging = true;
-            moved = false;
-            targetWasKnob = e.target.closest('.joystick-knob') !== null;
-            knob.classList.add('dragging');
-            document.addEventListener('touchmove', handleMove, { passive: false });
-            document.addEventListener('touchend', handleEnd);
-        });
+        base.addEventListener('pointerup', handleEnd);
+        base.addEventListener('pointercancel', handleEnd);
     });
 }
 
