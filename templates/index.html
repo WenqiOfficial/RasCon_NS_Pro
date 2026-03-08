@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="rascon">
+<html lang="zh-CN" data-theme="dracula">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,220 +8,272 @@
     <link href="/static/css/daisyui-5.5.18.css" rel="stylesheet" type="text/css">
     <!-- <link href="https://cdn.jsdelivr.net/npm/daisyui@5/daisyui.css" rel="stylesheet" type="text/css"> -->
     <!-- Tailwind CSS v4 (Browser Runtime — 零构建) -->
+    <link href="/static/css/style.css" rel="stylesheet" type="text/css">
     <script src="/static/js/tailwindcss_browser_4.2.1.js"></script>
     <!-- <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script> -->
-    <!-- 主题配置 -->
+    <script>try{const t=localStorage.getItem('theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
     <style type="text/tailwindcss">
     @theme {
         --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    /* ========== 自定义 DaisyUI 主题 — 精确匹配项目原色彩体系 ========== */
-    [data-theme="rascon"] {
-        color-scheme: dark;
-        /* 背景层级 */
-        --color-base-100: oklch(0.09 0 0);       /* #0d0d0d */
-        --color-base-200: oklch(0.12 0 0);       /* #141414 */
-        --color-base-300: oklch(0.14 0 0);       /* #1a1a1a */
-        --color-base-content: oklch(0.9 0 0);    /* #e0e0e0 */
-        /* 品牌色 */
-        --color-primary: oklch(0.76 0.14 172);   /* #00d4aa */
-        --color-primary-content: oklch(0.09 0 0);
-        --color-secondary: oklch(0.68 0.13 172); /* #00b894 */
-        --color-secondary-content: oklch(0.09 0 0);
-        --color-accent: oklch(0.76 0.14 172);    /* #00d4aa */
-        --color-accent-content: oklch(0.09 0 0);
-        /* 中性色 */
-        --color-neutral: oklch(0.16 0 0);        /* #1e1e1e */
-        --color-neutral-content: oklch(0.9 0 0);
-        /* 语义色 */
-        --color-info: oklch(0.62 0.13 247);      /* #3498db */
-        --color-info-content: oklch(0.95 0 0);
-        --color-success: oklch(0.76 0.14 172);   /* #00d4aa */
-        --color-success-content: oklch(0.09 0 0);
-        --color-warning: oklch(0.74 0.16 70);    /* #f39c12 */
-        --color-warning-content: oklch(0.09 0 0);
-        --color-error: oklch(0.57 0.22 26);      /* #e74c3c */
-        --color-error-content: oklch(0.95 0 0);
-        /* 圆角 & 边框 */
-        --radius-selector: 0.5rem;
-        --radius-field: 0.375rem;
-        --radius-box: 0.75rem;
-        --size-selector: 0.25rem;
-        --size-field: 0.25rem;
-        --border: 1px;
-        --depth: 0;
-        --noise: 0;
-        /* 补充色阶 — DaisyUI 5 未提供的细分层级 */
-        --color-border: oklch(0.21 0 0);           /* #2a2a2a */
-        --color-border-accent: oklch(0.25 0 0);    /* #333333 */
-        --color-muted: oklch(0.60 0 0);             /* #888888 */
-        --color-subtle: oklch(0.41 0 0);            /* #555555 */
+    /* Lucide Icons (https://lucide.dev) — MIT License */
+    .icon { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .controller-grid { grid-auto-flow: dense; }
+    /* 控制器按钮激活态 */
+    .controller-grid [data-btn] { 
+        position: relative; 
+        outline: 2px dashed oklch(var(--p) / 0);
+        outline-offset: -2px;
+        transition: outline-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), outline-offset 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
     }
+    .controller-grid [data-btn].absolute { position: absolute; }
+    .controller-grid [data-btn].pressed { background: oklch(var(--p)); color: oklch(var(--pc)); scale: 0.92; box-shadow: inset 0 2px 6px oklch(0 0 0 / 0.3); }
+    /* 蓝牙连接状态指示灯 */
+    #status-dot.connected { background: oklch(var(--su)); }
+    /* 键位编辑模式 */
+    .controller-grid.keybind-mode [data-btn] { 
+        outline-color: oklch(var(--p)); 
+        outline-offset: 2px; 
+    }
+    /* 极致丝滑的滚动条 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: oklch(var(--bc) / 0.2); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: oklch(var(--bc) / 0.4); }
+    /* 虚拟摇杆 */
+    .joystick-zone { touch-action: none; -webkit-user-select: none; user-select: none; }
+    .joystick-knob { transition: transform 0.12s ease-out, box-shadow 0.15s; }
+    .joystick-knob.dragging { transition: none; cursor: grabbing; box-shadow: 0 0 10px oklch(var(--p) / 0.5); }
     </style>
-    <!-- 组件样式 — 纯布局 & 动画，零颜色硬编码 -->
-    <link rel="stylesheet" href="/static/css/style.css">
 </head>
-<body class="min-h-screen p-5">
-    <div class="max-w-[1440px] mx-auto">
+<body class="min-h-screen bg-base-100 text-base-content font-sans antialiased selection:bg-primary/30 lg:h-screen lg:overflow-hidden">
+    <!-- SVG Icon Sprite — Lucide Icons (https://lucide.dev) MIT License -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+      <symbol id="i-gamepad" viewBox="0 0 24 24"><line x1="6" y1="11" x2="10" y2="11"/><line x1="8" y1="9" x2="8" y2="13"/><line x1="15" y1="12" x2="15.01" y2="12" stroke-width="3"/><line x1="18" y1="10" x2="18.01" y2="10" stroke-width="3"/><path d="M17.32 5H6.68a4 4 0 00-3.978 3.59c-.006.052-.01.101-.017.152C2.604 9.416 2 14.456 2 16a3 3 0 003 3c1 0 1.5-.5 2-1l1.414-1.414A2 2 0 019.828 16h4.344a2 2 0 011.414.586L17 18c.5.5 1 1 2 1a3 3 0 003-3c0-1.545-.604-6.584-.685-7.258a4.5 4.5 0 00-.017-.151A4 4 0 0017.32 5z"/></symbol>
+      <symbol id="i-archive" viewBox="0 0 24 24"><rect width="20" height="5" x="2" y="3" rx="1"/><path d="M4 8v11a2 2 0 002 2h12a2 2 0 002-2V8m-10 4h4"/></symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 000 20 14.5 14.5 0 000-20M2 12h20"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8m0-5v5h-5M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16m0 5v-5h5"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m14-7l-5-5-5 5m5-5v12"/></symbol>
+      <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 002-2V8a2 2 0 00-2-2h-7.9a2 2 0 01-1.69-.9L9.6 3.9A2 2 0 007.93 3H4a2 2 0 00-2 2v13a2 2 0 002 2z"/></symbol>
+      <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="m6 14 1.5-2.9A2 2 0 019.24 10H20a2 2 0 011.94 2.5l-1.54 6a2 2 0 01-1.95 1.5H4a2 2 0 01-2-2V5a2 2 0 012-2h3.9a2 2 0 011.69.9l.81 1.2a2 2 0 001.67.9H18a2 2 0 012 2v2"/></symbol>
+      <symbol id="i-collapse" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8"/></symbol>
+      <symbol id="i-expand" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 12h8m-4-4v8"/></symbol>
+      <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242M12 12v9m-3-3 3 3 3-3"/></symbol>
+      <symbol id="i-clipboard" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/></symbol>
+      <symbol id="i-zap" viewBox="0 0 24 24"><path d="M4 14a1 1 0 01-.78-1.63l9.9-10.2a.5.5 0 01.86.46l-1.92 6.02A1 1 0 0013 10h7a1 1 0 01.78 1.63l-9.9 10.2a.5.5 0 01-.86-.46l1.92-6.02A1 1 0 0011 14z"/></symbol>
+      <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6"/></symbol>
+      <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7z"/><path d="M14 2v4a2 2 0 002 2h4M10 9h4m-4 4h4m-6-4h.01M8 13h.01"/></symbol>
+      <symbol id="i-save" viewBox="0 0 24 24"><path d="M15.2 3a2 2 0 011.4.6l3.8 3.8a2 2 0 01.6 1.4V19a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/><path d="M17 21v-7a1 1 0 00-1-1H8a1 1 0 00-1 1v7M7 3v4a1 1 0 001 1h7"/></symbol>
+      <symbol id="i-keyboard" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001M10 8h.001M14 8h.001M18 8h.001M8 12h.001M12 12h.001M16 12h.001M7 16h10"/></symbol>
+      <symbol id="i-maximize" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+      <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 00-1-1h-4a1 1 0 00-1 1v8"/><path d="M3 10a2 2 0 01.709-1.528l7-5.999a2 2 0 012.582 0l7 5.999A2 2 0 0121 10v9a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7z"/><path d="M14 2v4a2 2 0 002 2h4"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m4-5 5 5 5-5m-5 5V3"/></symbol>
+      <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
+      <symbol id="i-stop" viewBox="0 0 24 24"><rect width="14" height="14" x="5" y="5" rx="2"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-inbox" viewBox="0 0 24 24"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/></symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 009 9 9 9 0 11-9-9z"/></symbol>
+    </svg>
+
+    <div class="max-w-[1440px] mx-auto p-1.5 lg:h-screen lg:flex lg:flex-col lg:overflow-hidden">
 
         <!-- ====== Header ====== -->
-        <header class="flex items-center justify-between px-6 py-4 bg-base-200 border border-base-300 rounded-box mb-5">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-xl">🎮</div>
-                <div class="text-xl font-bold tracking-tight">RasCon <span class="text-primary">Pro</span></div>
+        <header class="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-4 bg-base-200/80 backdrop-blur border border-base-content/10 rounded-2xl mb-3 lg:mb-4 shadow-sm flex-none">
+            <div class="flex items-center gap-2 lg:gap-3">
+                <div class="w-8 h-8 lg:w-10 lg:h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-content shadow-md">
+                    <svg class="icon w-4 h-4 lg:w-5 lg:h-5"><use href="#i-gamepad"/></svg>
+                </div>
+                <div class="text-lg lg:text-xl font-bold tracking-tight text-base-content">RasCon <span class="text-primary font-black">Pro</span></div>
             </div>
-            <div class="flex items-center gap-2">
-                <button type="button" onclick="connectBluetooth()" id="btn-connect" class="btn btn-primary btn-sm">连接</button>
-                <button type="button" onclick="disconnectBluetooth()" id="btn-disconnect" class="btn btn-error btn-sm">断开</button>
-                <div class="flex items-center gap-2 ml-2">
-                    <div class="status-dot" id="status-dot"></div>
-                    <span class="text-xs text-base-content/50" id="status-text">未连接</span>
+            <div class="flex items-center gap-2 lg:gap-3">
+                <button type="button" onclick="toggleTheme()" id="btn-theme" class="btn btn-ghost btn-sm btn-square rounded-xl text-base-content/70 hover:text-base-content transition-all" title="切换主题">
+                    <svg class="icon w-4 h-4" id="theme-icon-sun" style="display:none"><use href="#i-sun"/></svg>
+                    <svg class="icon w-4 h-4" id="theme-icon-moon"><use href="#i-moon"/></svg>
+                </button>
+                <button type="button" onclick="connectBluetooth()" id="btn-connect" class="btn btn-primary btn-sm rounded-xl px-3 lg:px-4 shadow-sm hover:shadow-md transition-all">连接</button>
+                <button type="button" onclick="disconnectBluetooth()" id="btn-disconnect" class="btn btn-error btn-sm rounded-xl px-3 lg:px-4 shadow-sm hover:shadow-md transition-all">断开</button>
+                <div class="flex items-center gap-2 ml-1 lg:ml-3 px-2 lg:px-3 py-1.5 bg-base-100 rounded-lg border border-base-content/10">
+                    <div class="w-2.5 h-2.5 rounded-full bg-base-content/20 transition-colors duration-300" id="status-dot"></div>
+                    <span class="text-xs font-medium text-base-content/60 hidden sm:inline" id="status-text">未连接</span>
                 </div>
             </div>
         </header>
 
-        <!-- ====== Main Layout Grid ====== -->
-        <div class="main-content grid grid-cols-[1fr_560px] gap-5 h-[calc(100vh-130px)] min-h-[500px]
-                    max-[1200px]:grid-cols-1 max-[1200px]:h-auto">
+        <!-- ====== Main Layout ====== -->
+        <div class="flex flex-col lg:flex-row gap-3 lg:gap-4 lg:flex-1 lg:min-h-0 lg:overflow-hidden">
 
             <!-- Left: Controller -->
-            <div class="left-section flex flex-col h-full min-h-0 max-[1200px]:h-auto">
-                <div class="card bg-base-200 border border-base-300 controller-panel">
-                    <div class="flex items-center justify-between px-5 pt-4 pb-3 border-b border-base-300">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider">Pro Controller</h3>
+            <div class="flex flex-col min-h-0 bg-base-200/50 rounded-2xl lg:rounded-3xl border border-base-content/10 overflow-hidden shadow-sm lg:flex-1">
+                <div class="flex flex-col h-full">
+                    <div class="flex flex-none items-center justify-between px-4 lg:px-6 pt-3 lg:pt-5 pb-2 lg:pb-4 border-b border-base-content/10 bg-base-200/80">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/50 flex items-center gap-2">
+                            <svg class="icon w-4 h-4"><use href="#i-gamepad"/></svg>
+                            Pro Controller
+                        </h3>
                         <div class="flex items-center gap-1">
-                            <button onclick="toggleKeybindMode()" id="btn-keybind-mode" class="btn btn-ghost btn-xs" title="键位管理">⌨ 键位管理</button>
-                            <button onclick="toggleFullscreen()" class="btn btn-ghost btn-xs" title="全屏模式">⛶</button>
+                            <button onclick="toggleKeybindMode()" id="btn-keybind-mode" class="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content gap-1.5 rounded-lg" title="键位管理">
+                                <svg class="icon w-3.5 h-3.5"><use href="#i-keyboard"/></svg> 键位
+                            </button>
+                            <button onclick="toggleFullscreen()" class="btn btn-ghost btn-xs text-base-content/70 hover:text-base-content rounded-lg" title="全屏模式">
+                                <svg class="icon w-3.5 h-3.5"><use href="#i-maximize"/></svg>
+                            </button>
                         </div>
                     </div>
-                    <div class="controller-grid-container">
-                        <div class="controller-grid">
-                            <!-- 行1: 肩键 -->
-                            <button data-btn="zl" class="btn-shoulder">ZL</button>
-                            <button data-btn="l" class="btn-shoulder">L</button>
-                            <i></i><i></i><i></i>
-                            <button data-btn="r" class="btn-shoulder">R</button>
-                            <button data-btn="zr" class="btn-shoulder">ZR</button>
-                            <!-- 行2: +/- -->
-                            <i></i><i></i>
-                            <button data-btn="minus" class="btn-system">-</button>
-                            <i></i>
-                            <button data-btn="plus" class="btn-system">+</button>
-                            <i></i><i></i>
-                            <!-- 行3: 左摇杆上 / X -->
-                            <i></i>
-                            <button data-btn="ls up,100" class="btn-stick">↑</button>
-                            <i></i><i></i><i></i>
-                            <button data-btn="x" class="btn-action">X</button>
-                            <i></i>
-                            <!-- 行4: 左摇杆 / Y/A -->
-                            <button data-btn="ls left,100" class="btn-stick">←</button>
-                            <button data-btn="l_stick" class="btn-stick">●</button>
-                            <button data-btn="ls right,100" class="btn-stick">→</button>
-                            <i></i>
-                            <button data-btn="y" class="btn-action">Y</button>
-                            <i></i>
-                            <button data-btn="a" class="btn-action">A</button>
-                            <!-- 行5: 左摇杆下 / B -->
-                            <i></i>
-                            <button data-btn="ls down,100" class="btn-stick">↓</button>
-                            <i></i><i></i><i></i>
-                            <button data-btn="b" class="btn-action">B</button>
-                            <i></i>
-                            <!-- 行6: 方向键上 / 右摇杆上 -->
-                            <i></i>
-                            <button data-btn="up" class="btn-dpad">▲</button>
-                            <i></i><i></i><i></i>
-                            <button data-btn="rs up,100" class="btn-stick">↑</button>
-                            <i></i>
-                            <!-- 行7: 方向键 / 右摇杆 -->
-                            <button data-btn="left" class="btn-dpad">◀</button>
-                            <i></i>
-                            <button data-btn="right" class="btn-dpad">▶</button>
-                            <i></i>
-                            <button data-btn="rs left,100" class="btn-stick">←</button>
-                            <button data-btn="r_stick" class="btn-stick">●</button>
-                            <button data-btn="rs right,100" class="btn-stick">→</button>
-                            <!-- 行8: 方向键下 / 右摇杆下 -->
-                            <i></i>
-                            <button data-btn="down" class="btn-dpad">▼</button>
-                            <i></i><i></i><i></i>
-                            <button data-btn="rs down,100" class="btn-stick">↓</button>
-                            <i></i>
-                            <!-- 行9: Capture / Home -->
-                            <i></i><i></i>
-                            <button data-btn="capture" class="btn-special">📷</button>
-                            <i></i>
-                            <button data-btn="home" class="btn-special">🏠</button>
-                            <i></i><i></i>
+                    <div class="flex-1 flex items-center justify-center p-3 lg:p-6 overflow-y-auto">
+                        <div class="grid grid-cols-7 grid-rows-9 gap-1 lg:gap-1.5 w-full max-w-[420px] lg:max-w-[520px] controller-grid select-none">
+                            <!-- R1: 肩键 -->
+                            <button data-btn="zl" class="row-start-1 col-start-1 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">ZL</button>
+                            <button data-btn="l" class="row-start-1 col-start-2 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">L</button>
+                            <button data-btn="r" class="row-start-1 col-start-6 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">R</button>
+                            <button data-btn="zr" class="row-start-1 col-start-7 btn min-h-0 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 text-xs font-bold rounded-xl shadow-sm transition-all duration-150">ZR</button>
+                            <!-- R2: +/- -->
+                            <button data-btn="minus" class="row-start-2 col-start-3 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-black text-lg shadow-sm transition-all duration-150">-</button>
+                            <button data-btn="plus" class="row-start-2 col-start-5 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-black text-lg shadow-sm transition-all duration-150">+</button>
+                            <!-- Right: ABXY Area -->
+                            <div class="row-start-3 row-end-6 col-start-5 col-end-8 flex items-center justify-center relative w-full h-full">
+                                <div class="relative w-[116px] h-[116px] lg:w-[136px] lg:h-[136px]">
+                                    <button data-btn="x" class="absolute top-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">X</button>
+                                    <button data-btn="y" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">Y</button>
+                                    <button data-btn="a" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">A</button>
+                                    <button data-btn="b" class="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/80 font-bold shadow-sm transition-all duration-150">B</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Left Stick Area -->
+                            <div class="row-start-3 row-end-6 col-start-1 col-end-4 flex items-center justify-center relative w-full h-full">
+                                <div data-stick="ls" class="joystick-zone flex items-center justify-center w-full h-full relative">
+                                    <!-- Base with outline -->
+                                    <div class="joystick-base w-[88px] h-[88px] lg:w-[104px] lg:h-[104px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
+                                        <!-- Knob -->
+                                        <div class="joystick-knob w-9 h-9 lg:w-11 lg:h-11 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="l_stick">
+                                            <div class="w-2 h-2 rounded-full bg-base-content/20 pointer-events-none"></div>
+                                        </div>
+                                        
+                                        <!-- Surround Buttons -->
+                                        <button data-btn="ls up,100" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↑</button>
+                                        <button data-btn="ls left,100" class="absolute left-[-12px] top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">←</button>
+                                        <button data-btn="ls right,100" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">→</button>
+                                        <button data-btn="ls down,100" class="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↓</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Right Stick Area -->
+                            <div class="row-start-6 row-end-9 col-start-5 col-end-8 flex items-center justify-center relative w-full h-full">
+                                <div data-stick="rs" class="joystick-zone flex items-center justify-center w-full h-full relative">
+                                    <div class="joystick-base w-[88px] h-[88px] lg:w-[104px] lg:h-[104px] rounded-full bg-base-200/50 border border-base-content/10 shadow-inner relative flex items-center justify-center">
+                                        <div class="joystick-knob w-9 h-9 lg:w-11 lg:h-11 rounded-full bg-base-100 border border-base-content/10 shadow-md flex items-center justify-center z-20 cursor-grab relative transition-transform" data-btn="r_stick">
+                                            <div class="w-2 h-2 rounded-full bg-base-content/20 pointer-events-none"></div>
+                                        </div>
+                                        
+                                        <button data-btn="rs up,100" class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↑</button>
+                                        <button data-btn="rs left,100" class="absolute left-[-12px] top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">←</button>
+                                        <button data-btn="rs right,100" class="absolute -right-3 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">→</button>
+                                        <button data-btn="rs down,100" class="absolute -bottom-3 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-7 h-7 bg-base-100/80 border border-base-content/10 text-base-content/60 hover:text-base-content hover:bg-base-200 transition-all text-xs shadow-sm">↓</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- D-Pad Area -->
+                            <div class="row-start-6 row-end-9 col-start-1 col-end-4 flex items-center justify-center relative w-full h-full">
+                                <div class="relative w-[116px] h-[116px] lg:w-[136px] lg:h-[136px]">
+                                    <button data-btn="up" class="absolute top-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▲</button>
+                                    <button data-btn="left" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">◀</button>
+                                    <button data-btn="right" class="absolute right-0 top-1/2 -translate-y-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▶</button>
+                                    <button data-btn="down" class="absolute bottom-0 left-1/2 -translate-x-1/2 z-10 btn btn-circle min-h-0 w-10 h-10 bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/70 shadow-sm transition-all duration-150 text-sm">▼</button>
+                                </div>
+                            </div>
+                            <!-- R9: Capture / Home -->
+                            <button data-btn="capture" class="row-start-9 col-start-3 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/60 shadow-sm transition-all duration-150" title="Capture"><svg class="icon w-4 h-4"><use href="#i-camera"/></svg></button>
+                            <button data-btn="home" class="row-start-9 col-start-5 btn btn-circle min-h-0 w-9 h-9 mx-auto bg-base-200 border border-base-content/10 hover:bg-base-300 text-base-content/60 shadow-sm transition-all duration-150" title="Home"><svg class="icon w-4 h-4"><use href="#i-home"/></svg></button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Right: Sidebar (Amiibo & Script) -->
-            <div class="right-section flex flex-col gap-3 h-full min-h-0 overflow-hidden
-                        max-[1200px]:h-auto">
+            <div class="flex flex-col gap-3 min-h-0 overflow-hidden lg:w-[540px] lg:flex-none">
                 <!-- Amiibo Panel (Tabbed) -->
-                <div class="card bg-base-200 border border-base-300 p-4 sidebar-panel-amiibo">
+                <div class="card bg-base-200/50 border border-base-content/10 rounded-2xl lg:rounded-3xl shadow-sm p-3 lg:p-4 min-h-[360px] lg:min-h-0 lg:flex-1 flex flex-col overflow-hidden">
                     <div role="tablist" class="tabs tabs-box tabs-sm mb-3">
-                        <button role="tab" class="tab tab-active" id="tab-library" onclick="switchAmiiboTab('library')">📦 本地库</button>
-                        <button role="tab" class="tab" id="tab-subscription" onclick="switchAmiiboTab('subscription')">🌐 在线订阅</button>
+                        <button role="tab" class="tab tab-active" id="tab-library" onclick="switchAmiiboTab('library')"><svg class="icon w-3.5 h-3.5"><use href="#i-archive"/></svg> 本地库</button>
+                        <button role="tab" class="tab" id="tab-subscription" onclick="switchAmiiboTab('subscription')"><svg class="icon w-3.5 h-3.5"><use href="#i-globe"/></svg> 在线订阅</button>
                     </div>
 
                     <!-- View: Library -->
                     <div id="amiibo-library-view" class="flex flex-col flex-1 min-h-0 overflow-hidden">
                         <div class="flex gap-1.5 mb-2 flex-wrap">
-                            <input type="text" id="amiibo-search-input" class="input input-bordered input-sm flex-1 min-w-[120px]" placeholder="🔍 搜索..." onkeyup="searchAmiibo(this.value)">
-                            <button onclick="refreshAmiiboList()" class="btn btn-ghost btn-sm" title="刷新">🔄</button>
+                            <input type="text" id="amiibo-search-input" class="input input-bordered input-sm flex-1 min-w-[120px]" placeholder="搜索..." onkeyup="searchAmiibo(this.value)">
+                            <button onclick="refreshAmiiboList()" class="btn btn-ghost btn-sm" title="刷新"><svg class="icon w-4 h-4"><use href="#i-refresh"/></svg></button>
                         </div>
                         <div class="flex gap-1.5 mb-2 flex-wrap">
-                            <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-primary btn-sm">➕ 上传</button>
+                            <button onclick="document.getElementById('amiibo-file').click()" class="btn btn-primary btn-sm gap-1"><svg class="icon w-3.5 h-3.5"><use href="#i-upload"/></svg> 上传</button>
                             <input type="file" id="amiibo-file" accept=".bin" multiple hidden onchange="uploadAmiibo()">
-                            <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn btn-ghost btn-sm">📁 分组</button>
-                            <button onclick="collapseAllGroups()" class="btn btn-ghost btn-sm" title="全部折叠" id="btn-collapse-all">⊟</button>
-                            <button onclick="expandAllGroups()" class="btn btn-ghost btn-sm" title="全部展开" id="btn-expand-all">⊞</button>
-                            <button onclick="updateAmiiboDatabase()" class="btn btn-ghost btn-sm">☁️ 更新DB</button>
+                            <button onclick="toggleGroupMode()" id="btn-group-mode" class="btn btn-ghost btn-sm gap-1"><svg class="icon w-3.5 h-3.5"><use href="#i-folder"/></svg> 分组</button>
+                            <button onclick="collapseAllGroups()" class="btn btn-ghost btn-sm" title="全部折叠" id="btn-collapse-all"><svg class="icon w-3.5 h-3.5"><use href="#i-collapse"/></svg></button>
+                            <button onclick="expandAllGroups()" class="btn btn-ghost btn-sm" title="全部展开" id="btn-expand-all"><svg class="icon w-3.5 h-3.5"><use href="#i-expand"/></svg></button>
+                            <button onclick="updateAmiiboDatabase()" class="btn btn-ghost btn-sm bg-base-200 border-none hover:bg-base-300 text-base-content/70 h-8 rounded-xl shadow-sm gap-1.5" title="更新DB">
+                                <svg class="icon w-3.5 h-3.5"><use href="#i-cloud"/></svg> DB
+                            </button>
                         </div>
-                        <div class="amiibo-content-split">
+                        <div class="flex-1 min-h-0 flex gap-4 overflow-hidden mt-1">
                             <!-- 左侧: 列表 -->
-                            <div class="amiibo-list-panel">
-                                <div id="amiibo-list" class="amiibo-simple-list">
-                                    <div class="empty-state">正在加载...</div>
+                            <div class="w-[55%] flex flex-col min-h-0 border border-base-content/10 bg-base-100/50 rounded-2xl shadow-inner relative overflow-hidden">
+                                <div id="amiibo-list" class="flex-1 overflow-y-auto w-full">
+                                    <div class="flex items-center justify-center h-full text-base-content/40 text-sm font-medium">正在加载...</div>
                                 </div>
-                                <div id="current-amiibo-status" class="current-amiibo-status hide">
-                                    <span class="label">使用中:</span>
-                                    <span id="current-amiibo-name" class="current-name"></span>
-                                    <button onclick="removeCurrentAmiibo()" class="btn btn-error btn-xs">移除</button>
+                                <div id="current-amiibo-status" class="absolute bottom-0 left-0 right-0 p-3 bg-base-200/90 backdrop-blur border-t border-base-content/10 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] translate-y-full opacity-0 transition-all duration-300">
+                                    <div class="flex items-center gap-2 overflow-hidden">
+                                        <div class="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                                        <span class="text-[11px] text-base-content/50 whitespace-nowrap">使用中:</span>
+                                        <span id="current-amiibo-name" class="text-xs font-bold truncate text-base-content"></span>
+                                    </div>
+                                    <button onclick="removeCurrentAmiibo()" class="btn btn-error btn-xs rounded-lg shadow-sm">移除</button>
                                 </div>
                             </div>
                             <!-- 右侧: 详情面板 -->
-                            <div class="amiibo-detail-panel" id="amiibo-detail-panel">
-                                <div class="detail-empty" id="detail-empty">
-                                    <div class="icon">📋</div>
-                                    <div>选择一个 Amiibo 查看详情</div>
+                            <div class="w-[45%] flex flex-col min-h-0 border border-base-content/10 bg-base-100/50 rounded-2xl shadow-inner relative overflow-hidden text-sm" id="amiibo-detail-panel">
+                                <div class="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 transition-opacity bg-base-100" id="detail-empty">
+                                    <div class="w-12 h-12 rounded-full bg-base-200 text-base-content/20 flex items-center justify-center mb-3">
+                                        <svg class="icon w-6 h-6"><use href="#i-clipboard"/></svg>
+                                    </div>
+                                    <div class="text-xs font-medium text-base-content/40">选择一个 Amiibo<br>查看详情</div>
                                 </div>
-                                <div id="detail-content" class="detail-content-inner">
-                                    <div class="detail-header">
-                                        <div class="detail-image" id="detail-image">
-                                            <span class="placeholder">?</span>
+                                <div id="detail-content" class="hidden flex-col h-full overflow-hidden absolute inset-0 z-20 bg-base-100">
+                                    <div class="flex-none p-4 pb-0 flex flex-col gap-3">
+                                        <div class="aspect-square w-24 mx-auto rounded-2xl overflow-hidden bg-base-200 flex items-center justify-center border border-base-content/5 shadow-inner" id="detail-image">
+                                            <span class="text-3xl text-base-content/20 font-bold">?</span>
                                         </div>
-                                        <div class="detail-meta">
-                                            <div class="name" id="detail-name">-</div>
-                                            <div class="sub" id="detail-sub">-</div>
-                                            <div class="tags" id="detail-tags"></div>
+                                        <div class="text-center w-full">
+                                            <div class="font-bold text-[13px] truncate text-base-content" id="detail-name">-</div>
+                                            <div class="text-[10px] text-base-content/50 mt-1 truncate" id="detail-sub">-</div>
+                                            <div class="flex flex-wrap items-center justify-center gap-1 mt-2" id="detail-tags"></div>
                                         </div>
                                     </div>
-                                    <div class="detail-actions">
-                                        <button class="btn btn-primary btn-sm" onclick="scanSelectedAmiibo()" title="扫描/使用">⚡ 使用</button>
-                                        <button class="btn btn-ghost btn-sm" onclick="restoreSelectedAmiibo()" id="detail-btn-restore" title="恢复到原始版本">↺ 重置</button>
-                                        <button class="btn btn-error btn-sm" onclick="deleteSelectedAmiibo()" title="删除">🗑 删除</button>
+                                    <div class="flex-none px-4 py-3 grid grid-cols-2 gap-2 border-b border-base-content/5">
+                                        <button class="col-span-2 btn btn-primary btn-sm rounded-xl shadow-sm text-xs h-8 gap-1.5" onclick="scanSelectedAmiibo()" title="扫描/使用">
+                                            <svg class="icon w-3.5 h-3.5"><use href="#i-zap"/></svg> 写入游戏
+                                        </button>
+                                        <button class="btn btn-ghost btn-sm bg-base-200 border-none hover:bg-base-300 text-base-content/70 rounded-xl h-8 gap-1" onclick="restoreSelectedAmiibo()" id="detail-btn-restore" title="恢复到原始版本">
+                                            <svg class="icon w-3.5 h-3.5"><use href="#i-undo"/></svg>
+                                        </button>
+                                        <button class="btn btn-ghost btn-sm bg-error/10 text-error hover:bg-error hover:text-error-content rounded-xl h-8 gap-1" onclick="deleteSelectedAmiibo()" title="删除">
+                                            <svg class="icon w-3.5 h-3.5"><use href="#i-trash"/></svg>
+                                        </button>
                                     </div>
-                                    <div class="detail-versions" id="detail-versions">
-                                        <div class="detail-versions-title">📦 版本历史</div>
-                                        <div id="version-list">
-                                            <div class="version-empty">无版本记录</div>
+                                    <div class="flex-1 flex flex-col min-h-0 pt-2" id="detail-versions">
+                                        <div class="px-4 text-[11px] font-bold text-base-content/40 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                            <svg class="icon w-3 h-3"><use href="#i-archive"/></svg> 版本历史
+                                        </div>
+                                        <div id="version-list" class="flex-1 overflow-y-auto px-3 pb-3">
+                                            <div class="flex items-center justify-center h-full text-base-content/30 text-xs">无版本记录</div>
                                         </div>
                                     </div>
                                 </div>
@@ -230,34 +282,65 @@
                     </div>
 
                     <!-- View: Subscription -->
-                    <div id="amiibo-subscription-view" class="hidden flex-col flex-1 min-h-0 overflow-hidden">
-                        <div class="flex gap-1.5 mb-2">
-                            <input type="text" id="repo-url-input" class="input input-bordered input-sm flex-1" placeholder="GitHub: User/Repo">
-                            <button onclick="fetchRepoTree()" class="btn btn-primary btn-sm">获取</button>
+                    <div id="amiibo-subscription-view" class="hidden flex-col flex-1 min-h-0 overflow-hidden p-4 pt-3">
+                        <div class="flex gap-2 mb-3">
+                            <div class="relative flex-1">
+                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 icon w-4 h-4 text-base-content/40"><use href="#i-globe"/></svg>
+                                <input type="text" id="repo-url-input" class="input input-bordered input-sm w-full pl-9 h-9 rounded-xl border-base-content/10 focus:border-primary/50 focus:outline-none bg-base-100/50" placeholder="GitHub: User/Repo">
+                            </div>
+                            <button onclick="fetchRepoTree()" class="btn btn-primary btn-sm h-9 rounded-xl shadow-sm px-4">获取</button>
                         </div>
-                        <div class="hidden flex gap-1.5 mb-2" id="repo-toolbar">
-                            <input type="text" id="repo-search-input" class="input input-bordered input-sm flex-1" placeholder="🔍 筛选文件..." onkeyup="filterRepoFiles(this.value)">
-                            <button onclick="collapseAllRepoGroups()" class="btn btn-ghost btn-sm" title="全部折叠">⊟</button>
-                            <button onclick="expandAllRepoGroups()" class="btn btn-ghost btn-sm" title="全部展开">⊞</button>
+                        <div class="hidden flex items-center gap-2 mb-3" id="repo-toolbar">
+                            <div class="relative flex-1">
+                                <svg class="absolute left-3 top-1/2 -translate-y-1/2 icon w-3.5 h-3.5 text-base-content/30"><use href="#i-search"/></svg>
+                                <input type="text" id="repo-search-input" class="input input-sm w-full pl-8 h-8 rounded-lg bg-base-200 border-transparent focus:border-primary/30 focus:bg-base-100 focus:outline-none text-sm placeholder:text-base-content/30" placeholder="搜索文件..." onkeyup="filterRepoFiles(this.value)">
+                            </div>
+                            <div class="join border border-base-content/10 rounded-lg">
+                                <button onclick="collapseAllRepoGroups()" class="join-item btn btn-sm btn-square bg-base-200 border-none hover:bg-base-300 text-base-content/70 h-8 w-8" title="全部折叠">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#i-collapse"/></svg>
+                                </button>
+                                <div class="w-px bg-base-content/10 h-8"></div>
+                                <button onclick="expandAllRepoGroups()" class="join-item btn btn-sm btn-square bg-base-200 border-none hover:bg-base-300 text-base-content/70 h-8 w-8" title="全部展开">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#i-expand"/></svg>
+                                </button>
+                            </div>
                         </div>
-                        <div id="repo-content" class="flex-1 overflow-y-auto border border-base-300 rounded-lg bg-base-300 p-2">
-                            <div class="empty-state">输入 GitHub 仓库地址<br><small>例如: Falco/amiibo</small></div>
+                        <div class="flex-1 min-h-0 overflow-y-auto border border-base-content/10 rounded-2xl shadow-inner bg-base-100/50 relative">
+                            <div id="repo-content" class="absolute inset-0 overflow-y-auto p-2 w-full h-full">
+                                <div class="flex flex-col items-center justify-center h-full text-center p-6 bg-base-200/30 m-2 rounded-2xl border border-base-content/5 border-dashed">
+                                    <div class="w-10 h-10 rounded-full bg-base-200 text-base-content/30 flex items-center justify-center mb-3">
+                                        <svg class="icon w-5 h-5"><use href="#i-globe"/></svg>
+                                    </div>
+                                    <div class="font-medium text-base-content/60 text-sm mb-1">输入 GitHub 仓库地址</div>
+                                    <div class="text-xs text-base-content/40 font-mono">例如: Falco/amiibo</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Script Panel -->
-                <div class="card bg-base-200 border border-base-300 p-4 sidebar-panel-script">
-                    <div class="flex items-center gap-2 mb-2">
-                        <h3 class="text-xs font-semibold uppercase tracking-wider">📜 脚本</h3>
-                        <span class="text-[10px] text-base-content/30">支持宏命令</span>
+                <div class="h-[160px] lg:h-[180px] flex-none flex flex-col bg-base-200/50 rounded-2xl lg:rounded-3xl border border-base-content/10 overflow-hidden shadow-sm">
+                    <div class="px-5 pt-3 pb-2 border-b border-base-content/10 bg-base-200/80 flex items-center justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-widest text-base-content/50 flex items-center gap-2">
+                            <svg class="icon w-4 h-4"><use href="#i-file-text"/></svg> 脚本控制
+                        </h3>
+                        <span class="text-[10px] text-base-content/30 bg-base-300/50 px-2 py-0.5 rounded-md font-mono">支持宏命令</span>
                     </div>
-                    <div id="script-form" class="flex flex-1 gap-2 min-h-0">
-                        <textarea id="script-area" class="textarea textarea-bordered flex-1 min-h-[80px] resize-none font-mono text-xs leading-relaxed" spellcheck="false" placeholder="# 按A键&#10;a&#10;# 等待1秒&#10;wait 1000&#10;# 左摇杆推左&#10;ls left,100"></textarea>
-                        <div class="flex flex-col gap-1.5 shrink-0">
-                            <button type="button" onclick="saveScript()" class="btn btn-ghost btn-sm" title="保存">💾 保存</button>
-                            <button type="button" id="script-toggle-btn" onclick="toggleScript()" class="btn btn-primary btn-sm">▶ 运行</button>
-                            <button type="button" onclick="clearScript()" class="btn btn-ghost btn-sm" title="清空">🗑 清空</button>
+                    <div id="script-form" class="flex flex-1 gap-3 p-4 bg-base-100/30">
+                        <textarea id="script-area" class="textarea w-full h-full resize-none font-mono text-[13px] leading-relaxed bg-base-100 border-base-content/10 focus:border-primary/50 rounded-xl shadow-inner placeholder:text-base-content/20" spellcheck="false" placeholder="# 按A键&#10;a&#10;# 等待1秒&#10;wait 1000&#10;# 左摇杆推左&#10;ls left,100"></textarea>
+                        <div class="flex flex-col gap-2 shrink-0">
+                            <button type="button" id="script-toggle-btn" onclick="toggleScript()" class="btn btn-primary flex-1 min-h-[44px] rounded-xl shadow-sm gap-2">
+                                <svg class="icon w-4 h-4"><use href="#i-play"/></svg> 运行
+                            </button>
+                            <div class="flex gap-2 h-9">
+                                <button type="button" onclick="saveScript()" class="btn btn-sm flex-1 bg-base-200 hover:bg-base-300 border-base-content/10 text-base-content/70 rounded-lg shadow-sm" title="保存">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#i-save"/></svg>
+                                </button>
+                                <button type="button" onclick="clearScript()" class="btn btn-sm flex-1 bg-base-200 hover:bg-base-300 border-base-content/10 text-base-content/70 rounded-lg shadow-sm" title="清空">
+                                    <svg class="icon w-3.5 h-3.5"><use href="#i-trash"/></svg>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -265,45 +348,48 @@
         </div>
 
         <!-- Footer -->
-        <footer class="text-center p-5 mt-5 text-base-content/40 text-[11px] tracking-wider">
-            &copy; 2020-2026 RasCon - Python 3.11+ 适配版 | Amiibo 库集成版
+        <footer class="text-center py-4 lg:py-6 text-base-content/30 text-[11px] font-medium tracking-widest uppercase flex-none">
+            &copy; 2020-2026 RasCon &bull; Python 3.11+ 适配版 &bull; Amiibo 集成版
         </footer>
     </div>
 
     <!-- Toast -->
-    <div class="toast toast-end toast-bottom z-50" id="toast-container"></div>
+    <div class="toast toast-end toast-bottom z-50 p-6" id="toast-container"></div>
 
-    <!-- 确认对话框 (DaisyUI Modal — 替代原生 confirm()) -->
-    <dialog id="confirm-modal" class="modal">
-        <div class="modal-box">
-            <p id="confirm-message" class="py-4 text-sm leading-relaxed whitespace-pre-line"></p>
-            <div class="modal-action">
-                <button id="confirm-cancel" class="btn btn-ghost btn-sm">取消</button>
-                <button id="confirm-ok" class="btn btn-primary btn-sm">确定</button>
+    <!-- 确认对话框 -->
+    <dialog id="confirm-modal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box bg-base-200 rounded-t-3xl sm:rounded-3xl shadow-2xl p-6">
+            <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-base-content">
+                <svg class="icon w-5 h-5 text-warning"><use href="#i-info"/></svg> 确认操作
+            </h3>
+            <p id="confirm-message" class="py-2 text-[15px] leading-relaxed text-base-content/70 mb-6"></p>
+            <div class="modal-action mt-0 flex gap-3">
+                <button id="confirm-cancel" class="btn flex-1 bg-base-300 border-none hover:bg-base-content/10 text-base-content/70 rounded-xl">取消</button>
+                <button id="confirm-ok" class="btn btn-primary flex-1 rounded-xl">确定</button>
             </div>
         </div>
-        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
+        <form method="dialog" class="modal-backdrop bg-base-100/50 backdrop-blur-sm"><button type="button">close</button></form>
     </dialog>
 
     <!-- 键位绑定对话框 -->
-    <dialog id="keybind-modal" class="modal">
-        <div class="modal-box max-w-xs">
-            <h3 class="font-bold text-sm mb-2" id="keybind-modal-title">设置键位</h3>
-            <p class="text-xs text-base-content/50 mb-3">按下想要绑定的键盘按键（可加 Shift）</p>
-            <div class="flex items-center justify-center py-6 border border-dashed border-base-300 rounded-lg bg-base-300 mb-3">
-                <span id="keybind-modal-key" class="text-2xl font-mono font-bold text-primary">—</span>
+    <dialog id="keybind-modal" class="modal modal-bottom sm:modal-middle">
+        <div class="modal-box max-w-xs bg-base-200 rounded-t-3xl sm:rounded-3xl shadow-2xl">
+            <h3 class="font-bold text-base mb-1" id="keybind-modal-title">设置键位</h3>
+            <p class="text-[11px] text-base-content/50 mb-5">按下想要绑定的键盘按键（可加 Shift）</p>
+            <div class="flex items-center justify-center h-24 border-2 border-dashed border-base-content/10 rounded-2xl bg-base-100 shadow-inner mb-5">
+                <span id="keybind-modal-key" class="text-3xl font-mono font-black text-primary drop-shadow-sm">—</span>
             </div>
-            <div class="flex items-center gap-2 text-xs text-base-content/40 mb-4">
+            <div class="flex items-center gap-2 text-xs text-base-content/40 mb-5">
                 <span>当前:</span>
-                <kbd class="kbd kbd-xs" id="keybind-modal-current">无</kbd>
+                <kbd class="kbd kbd-sm bg-base-100 border-base-content/10" id="keybind-modal-current">无</kbd>
             </div>
-            <div class="modal-action">
-                <button id="keybind-unbind" class="btn btn-ghost btn-sm">恢复默认</button>
-                <button id="keybind-cancel" class="btn btn-ghost btn-sm">取消</button>
-                <button id="keybind-ok" class="btn btn-primary btn-sm" disabled>确定</button>
+            <div class="modal-action mt-0 flex gap-2">
+                <button id="keybind-unbind" class="btn btn-ghost flex-1 text-[13px] bg-base-300 hover:bg-base-content/10 border-none text-base-content/70 rounded-xl max-w-[80px] p-0">清空</button>
+                <button id="keybind-cancel" class="btn btn-ghost flex-1 text-[13px] bg-base-300 hover:bg-base-content/10 border-none text-base-content/70 rounded-xl">取消</button>
+                <button id="keybind-ok" class="btn btn-primary flex-[2] rounded-xl text-[13px]" disabled>绑定按键</button>
             </div>
         </div>
-        <form method="dialog" class="modal-backdrop"><button type="button">close</button></form>
+        <form method="dialog" class="modal-backdrop bg-base-100/50 backdrop-blur-sm"><button type="button">close</button></form>
     </dialog>
 
     <!-- 服务端数据注入 -->
